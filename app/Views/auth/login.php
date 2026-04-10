@@ -1,6 +1,7 @@
 <?php
 
 $title = 'PantaCad | Login';
+$bodyClass = 'login-page';
 require dirname(__DIR__) . '/layouts/header.php';
 ?>
 <main class="card">

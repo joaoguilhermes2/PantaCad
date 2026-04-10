@@ -1,6 +1,7 @@
 <?php
 
 $title = 'PantaCad | Painel';
+$bodyClass = 'dashboard-page';
 require dirname(__DIR__) . '/layouts/header.php';
 ?>
 <main class="card">

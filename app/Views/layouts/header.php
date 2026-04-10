@@ -6,4 +6,4 @@
     <title><?= htmlspecialchars($title ?? 'PantaCad', ENT_QUOTES, 'UTF-8'); ?></title>
     <link rel="stylesheet" href="Css/style.css">
 </head>
-<body>
+<body class="<?= htmlspecialchars($bodyClass ?? 'app-page', ENT_QUOTES, 'UTF-8'); ?>">
