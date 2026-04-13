@@ -15,7 +15,35 @@ if ($requestMethod === 'POST' && $action === 'login') {
     return;
 }
 
+if ($requestMethod === 'POST' && $action === 'update_first_access_password') {
+    $controller->updateFirstAccessPassword();
+    return;
+}
+
+if ($requestMethod === 'POST' && $action === 'update_profile') {
+    $controller->updateProfile();
+    return;
+}
+
+if ($requestMethod === 'POST' && $action === 'store_access') {
+    $controller->storeAccess();
+    return;
+}
+
+if ($requestMethod === 'POST' && $action === 'update_access') {
+    $controller->updateAccess();
+    return;
+}
+
+if ($requestMethod === 'POST' && $action === 'delete_access') {
+    $controller->deleteAccess();
+    return;
+}
+
 match ($action) {
+    'accesses' => $controller->accesses(),
+    'first_access' => $controller->firstAccess(),
+    'profile' => $controller->profile(),
     'logout' => $controller->logout(),
     'dashboard' => $controller->dashboard(),
     default => $controller->index(),

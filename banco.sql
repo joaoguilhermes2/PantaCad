@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     nome VARCHAR(150) NOT NULL,
     email VARCHAR(150) NOT NULL,
     senha_hash TEXT NOT NULL,
+    nivel_acesso VARCHAR(30) NOT NULL DEFAULT 'Colaborador',
+    foto_perfil VARCHAR(255) NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     ultimo_login_em TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -28,20 +30,3 @@ CREATE TRIGGER trg_usuarios_updated_at
 BEFORE UPDATE ON usuarios
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
-
--- Exemplo de usuario inicial.
--- A senha abaixo sera armazenada em hash usando bcrypt.
-INSERT INTO usuarios (nome, email, senha_hash)
-VALUES (
-    'Administrador',
-    'admin@pantacad.com',
-    crypt('123456', gen_salt('bf', 12))
-)
-ON CONFLICT DO NOTHING;
-
--- Exemplo de validacao de login:
--- SELECT id, nome, email
--- FROM usuarios
--- WHERE LOWER(email) = LOWER(:email)
---   AND ativo = TRUE
---   AND senha_hash = crypt(:senha, senha_hash);

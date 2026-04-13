@@ -36,4 +36,3 @@ function flash(string $key, mixed $value = null): mixed
 
     return $flash;
 }
-
