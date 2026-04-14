@@ -1439,7 +1439,7 @@ body.dashboard-page .dashboard-main .profile-page {
 }
 
 .access-page__intro p {
-    max-width: 860px;
+    max-width: 100%;
     color: #5c6e89;
     line-height: 1.7;
 }
