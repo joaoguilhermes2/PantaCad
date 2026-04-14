@@ -81,6 +81,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                     <div class="dashboard-menu__submenu" id="menu-cadastros" data-menu-panel="cadastros">
                         <a class="dashboard-menu__subitem" href="index.php?action=users">Usuarios</a>
                         <a class="dashboard-menu__subitem dashboard-menu__subitem--active" href="index.php?action=accesses">Acessos</a>
+                        <a class="dashboard-menu__subitem" href="#">Formulário</a>
                     </div>
                 </div>
             </nav>
