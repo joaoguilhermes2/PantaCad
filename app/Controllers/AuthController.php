@@ -171,6 +171,15 @@ final class AuthController
         ]);
     }
 
+    public function users(): void
+    {
+        $this->ensureAuthenticated();
+
+        view('auth/users', [
+            'usuario' => $_SESSION['usuario'],
+        ]);
+    }
+
     public function accesses(): void
     {
         $this->ensureAuthenticated();

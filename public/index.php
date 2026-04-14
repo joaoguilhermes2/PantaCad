@@ -42,6 +42,7 @@ if ($requestMethod === 'POST' && $action === 'delete_access') {
 
 match ($action) {
     'accesses' => $controller->accesses(),
+    'users' => $controller->users(),
     'first_access' => $controller->firstAccess(),
     'profile' => $controller->profile(),
     'logout' => $controller->logout(),
