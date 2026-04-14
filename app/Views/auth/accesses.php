@@ -4,12 +4,21 @@ $title = 'PantaCad | Acessos';
 $bodyClass = 'dashboard-page';
 $isEditing = is_array($editAccess ?? null);
 $isCreating = (bool) ($createModalOpen ?? false) && !$isEditing;
+$hasSuccessModal = ($successMessage ?? '') !== '';
+$currentPage = max(1, (int) ($currentPage ?? 1));
+$totalPages = max(1, (int) ($totalPages ?? 1));
+$pageQuery = '&page=' . $currentPage;
+$previousPage = max(1, $currentPage - 1);
+$nextPage = min($totalPages, $currentPage + 1);
 $nomeValue = (string) (($old['nome'] ?? '') !== '' ? $old['nome'] : '');
 $emailValue = (string) (($old['email'] ?? '') !== '' ? $old['email'] : '');
-$nivelAcessoValue = (string) (($old['nivel_acesso'] ?? '') !== '' ? $old['nivel_acesso'] : 'Colaborador');
+$nivelAcessoIdValue = (int) (($old['nivel_acesso_id'] ?? 0) > 0 ? $old['nivel_acesso_id'] : 0);
 $ativoValue = !array_key_exists('ativo', $old ?? []) || (bool) $old['ativo'];
 $editNomeValue = (string) (($old['nome'] ?? '') !== '' ? $old['nome'] : (($editAccess['nome'] ?? '') !== '' ? $editAccess['nome'] : ''));
 $editEmailValue = (string) (($old['email'] ?? '') !== '' ? $old['email'] : (($editAccess['email'] ?? '') !== '' ? $editAccess['email'] : ''));
+$editNivelAcessoIdValue = (int) (($old['nivel_acesso_id'] ?? 0) > 0
+    ? $old['nivel_acesso_id']
+    : (($editAccess['nivel_acesso_id'] ?? 0) > 0 ? $editAccess['nivel_acesso_id'] : 0));
 $editAtivoValue = array_key_exists('ativo', $old ?? [])
     ? (bool) $old['ativo']
     : ($isEditing ? !empty($editAccess['ativo']) : true);
@@ -94,18 +103,14 @@ require dirname(__DIR__) . '/layouts/header.php';
                     <div class="error"><?= htmlspecialchars((string) $errorMessage, ENT_QUOTES, 'UTF-8'); ?></div>
                 <?php endif; ?>
 
-                <?php if (($successMessage ?? '') !== ''): ?>
-                    <div class="success"><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></div>
-                <?php endif; ?>
-
                 <section class="access-grid">
-                    <article class="access-card access-card--wide">
+                    <article class="access-card access-card--wide" id="access-card">
                         <div class="access-card__header">
                             <div>
                                 <h2>Acessos cadastrados</h2>
                                 <p>Relacao atual dos usuarios com login configurado.</p>
                             </div>
-                            <a class="access-card__create" href="index.php?action=accesses&new=1">Novo acesso</a>
+                            <a class="access-card__create" href="index.php?action=accesses&new=1<?= $pageQuery; ?>">Novo acesso</a>
                         </div>
 
                         <div class="access-table">
@@ -125,7 +130,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                                             <td><?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?></td>
                                             <td><?= htmlspecialchars((string) $item['email'], ENT_QUOTES, 'UTF-8'); ?></td>
                                             <td>
-                                                <span class="access-level"><?= htmlspecialchars((string) ($item['nivel_acesso'] ?? 'Colaborador'), ENT_QUOTES, 'UTF-8'); ?></span>
+                                                <span class="access-level"><?= htmlspecialchars((string) ($item['nivel_acesso'] ?? 'Sem nivel'), ENT_QUOTES, 'UTF-8'); ?></span>
                                             </td>
                                             <td>
                                                 <span class="access-status <?= !empty($item['ativo']) ? 'access-status--active' : 'access-status--inactive'; ?>">
@@ -134,13 +139,14 @@ require dirname(__DIR__) . '/layouts/header.php';
                                             </td>
                                             <td>
                                                 <div class="access-actions">
-                                                    <a class="access-action access-action--edit" href="index.php?action=accesses&edit=<?= (int) $item['id']; ?>" title="Editar acesso" aria-label="Editar acesso de <?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <a class="access-action access-action--edit" href="index.php?action=accesses&edit=<?= (int) $item['id']; ?><?= $pageQuery; ?>" title="Editar acesso" aria-label="Editar acesso de <?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?>">
                                                         <svg viewBox="0 0 24 24" aria-hidden="true">
                                                             <path d="M4 15.75V20h4.25L19.81 8.44l-4.25-4.25L4 15.75zm13.71-8.04a1.003 1.003 0 0 0 0-1.42l-2-2a1.003 1.003 0 0 0-1.42 0l-1.59 1.59 4.25 4.25 1.76-1.42z"/>
                                                         </svg>
                                                     </a>
                                                     <form method="post" action="index.php?action=delete_access" onsubmit="return confirm('Deseja realmente excluir este acesso?');">
                                                         <input type="hidden" name="id" value="<?= (int) $item['id']; ?>">
+                                                        <input type="hidden" name="page" value="<?= $currentPage; ?>">
                                                         <button
                                                             type="submit"
                                                             class="access-action access-action--delete"
@@ -157,9 +163,32 @@ require dirname(__DIR__) . '/layouts/header.php';
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
+                                    <?php if (($accessList ?? []) === []): ?>
+                                        <tr>
+                                            <td colspan="5" class="access-table__empty">Nenhum acesso encontrado nesta pagina.</td>
+                                        </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
+
+                        <?php if ($totalPages > 1): ?>
+                            <div class="access-pagination" aria-label="Paginacao de acessos">
+                                <a
+                                    class="access-pagination__arrow <?= $currentPage <= 1 ? 'is-disabled' : ''; ?>"
+                                    href="<?= $currentPage <= 1 ? '#' : 'index.php?action=accesses&page=' . $previousPage; ?>"
+                                    aria-label="Pagina anterior"
+                                    <?= $currentPage <= 1 ? 'aria-disabled="true" tabindex="-1"' : ''; ?>
+                                >&lt;</a>
+                                <span class="access-pagination__info">Pagina <?= $currentPage; ?> de <?= $totalPages; ?></span>
+                                <a
+                                    class="access-pagination__arrow <?= $currentPage >= $totalPages ? 'is-disabled' : ''; ?>"
+                                    href="<?= $currentPage >= $totalPages ? '#' : 'index.php?action=accesses&page=' . $nextPage; ?>"
+                                    aria-label="Proxima pagina"
+                                    <?= $currentPage >= $totalPages ? 'aria-disabled="true" tabindex="-1"' : ''; ?>
+                                >&gt;</a>
+                            </div>
+                        <?php endif; ?>
                     </article>
                 </section>
             </section>
@@ -170,7 +199,7 @@ require dirname(__DIR__) . '/layouts/header.php';
     <div class="access-modal is-open" id="access-create-modal" role="dialog" aria-modal="true" aria-labelledby="access-create-title">
         <div class="access-modal__backdrop"></div>
         <div class="access-modal__dialog">
-            <a href="index.php?action=accesses" class="access-modal__close" aria-label="Fechar modal de novo acesso">x</a>
+            <a href="index.php?action=accesses&page=<?= $currentPage; ?>" class="access-modal__close" aria-label="Fechar modal de novo acesso">x</a>
 
             <div class="access-modal__header">
                 <h2 id="access-create-title">Novo acesso</h2>
@@ -178,6 +207,8 @@ require dirname(__DIR__) . '/layouts/header.php';
             </div>
 
             <form method="post" action="index.php?action=store_access" class="access-form access-form--modal">
+                <input type="hidden" name="page" value="<?= $currentPage; ?>">
+
                 <label for="access-nome-modal">
                     Nome completo
                     <input id="access-nome-modal" name="nome" type="text" value="<?= htmlspecialchars($nomeValue, ENT_QUOTES, 'UTF-8'); ?>" required>
@@ -190,10 +221,11 @@ require dirname(__DIR__) . '/layouts/header.php';
 
                 <label for="access-level-modal">
                     Selecione o nivel de acesso
-                    <select id="access-level-modal" name="nivel_acesso" class="access-form__select" required>
+                    <select id="access-level-modal" name="nivel_acesso_id" class="access-form__select" required>
+                        <option value="">Selecione</option>
                         <?php foreach (($accessLevels ?? []) as $nivel): ?>
-                            <option value="<?= htmlspecialchars((string) $nivel, ENT_QUOTES, 'UTF-8'); ?>" <?= $nivelAcessoValue === $nivel ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars((string) $nivel, ENT_QUOTES, 'UTF-8'); ?>
+                            <option value="<?= (int) $nivel['id']; ?>" <?= $nivelAcessoIdValue === (int) $nivel['id'] ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars((string) $nivel['nome'], ENT_QUOTES, 'UTF-8'); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -209,7 +241,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                 </div>
 
                 <div class="access-form__actions">
-                    <a class="access-form__cancel" href="index.php?action=accesses">Cancelar</a>
+                    <a class="access-form__cancel" href="index.php?action=accesses&page=<?= $currentPage; ?>">Cancelar</a>
                     <button type="submit" class="access-form__submit">Criar acesso</button>
                 </div>
             </form>
@@ -220,7 +252,7 @@ require dirname(__DIR__) . '/layouts/header.php';
     <div class="access-modal is-open" id="access-edit-modal" role="dialog" aria-modal="true" aria-labelledby="access-edit-title">
         <div class="access-modal__backdrop"></div>
         <div class="access-modal__dialog">
-            <a href="index.php?action=accesses" class="access-modal__close" aria-label="Fechar modal de edicao">x</a>
+            <a href="index.php?action=accesses&page=<?= $currentPage; ?>" class="access-modal__close" aria-label="Fechar modal de edicao">x</a>
 
             <div class="access-modal__header">
                 <h2 id="access-edit-title">Editar acesso</h2>
@@ -229,6 +261,7 @@ require dirname(__DIR__) . '/layouts/header.php';
 
             <form method="post" action="index.php?action=update_access" class="access-form access-form--modal">
                 <input type="hidden" name="id" value="<?= (int) $editAccess['id']; ?>">
+                <input type="hidden" name="page" value="<?= $currentPage; ?>">
 
                 <label for="access-edit-nome">
                     Nome completo
@@ -238,6 +271,18 @@ require dirname(__DIR__) . '/layouts/header.php';
                 <label for="access-edit-email">
                     Email de acesso
                     <input id="access-edit-email" name="email" type="email" value="<?= htmlspecialchars($editEmailValue, ENT_QUOTES, 'UTF-8'); ?>" required>
+                </label>
+
+                <label for="access-edit-level">
+                    Selecione o nivel de acesso
+                    <select id="access-edit-level" name="nivel_acesso_id" class="access-form__select" required>
+                        <option value="">Selecione</option>
+                        <?php foreach (($accessLevels ?? []) as $nivel): ?>
+                            <option value="<?= (int) $nivel['id']; ?>" <?= $editNivelAcessoIdValue === (int) $nivel['id'] ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars((string) $nivel['nome'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </label>
 
                 <label class="access-form__check">
@@ -250,28 +295,58 @@ require dirname(__DIR__) . '/layouts/header.php';
                 </div>
 
                 <div class="access-form__actions">
-                    <a class="access-form__cancel" href="index.php?action=accesses">Cancelar</a>
+                    <a class="access-form__cancel" href="index.php?action=accesses&page=<?= $currentPage; ?>">Cancelar</a>
                     <button type="submit" class="access-form__submit">Salvar alteracoes</button>
                 </div>
             </form>
         </div>
     </div>
 <?php endif; ?>
+<?php if ($hasSuccessModal): ?>
+    <div class="access-modal access-modal--success is-open" id="access-success-modal" role="dialog" aria-modal="true" aria-labelledby="access-success-title">
+        <div class="access-modal__backdrop"></div>
+        <div class="access-modal__dialog">
+            <a href="index.php?action=accesses&page=<?= $currentPage; ?>" class="access-modal__close" aria-label="Fechar modal de sucesso">x</a>
+
+            <div class="access-modal__header access-modal__header--success">
+                <span class="access-modal__badge" aria-hidden="true">Sucesso</span>
+                <h2 id="access-success-title">Operacao concluida</h2>
+                <p><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></p>
+            </div>
+
+            <div class="access-modal__actions">
+                <a class="access-form__submit access-form__submit--full" href="index.php?action=accesses&page=<?= $currentPage; ?>">Continuar</a>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 <script>
     (function () {
+        const storageKey = 'pantacad-dashboard-menu-collapsed';
         const body = document.body;
         const toggle = document.getElementById('dashboard-toggle');
         const menuToggle = document.querySelector('[data-menu-toggle="cadastros"]');
         const menuPanel = document.querySelector('[data-menu-panel="cadastros"]');
         const menuGroup = menuToggle ? menuToggle.closest('.dashboard-menu__group') : null;
+        const accessCard = document.getElementById('access-card');
+        const paginationArrows = document.querySelectorAll('.access-pagination__arrow:not(.is-disabled)');
         const modal = document.querySelector('.access-modal.is-open');
         const modalBackdrop = modal ? modal.querySelector('.access-modal__backdrop') : null;
         const modalClose = modal ? modal.querySelector('.access-modal__close') : null;
 
         if (toggle) {
+            toggle.setAttribute('aria-expanded', String(!body.classList.contains('dashboard-menu-collapsed')));
+        }
+
+        if (toggle) {
             toggle.addEventListener('click', function () {
                 const isCollapsed = body.classList.toggle('dashboard-menu-collapsed');
                 toggle.setAttribute('aria-expanded', String(!isCollapsed));
+
+                try {
+                    window.localStorage.setItem(storageKey, isCollapsed ? 'true' : 'false');
+                } catch (error) {
+                }
             });
         }
 
@@ -286,25 +361,52 @@ require dirname(__DIR__) . '/layouts/header.php';
             });
         }
 
+        if (accessCard && paginationArrows.length) {
+            paginationArrows.forEach(function (arrow) {
+                arrow.addEventListener('click', function (event) {
+                    const targetHref = arrow.getAttribute('href');
+
+                    if (!targetHref || targetHref === '#') {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    accessCard.classList.remove('access-card--page-next', 'access-card--page-prev');
+                    void accessCard.offsetWidth;
+
+                    accessCard.classList.add(
+                        arrow.getAttribute('aria-label') === 'Proxima pagina'
+                            ? 'access-card--page-next'
+                            : 'access-card--page-prev'
+                    );
+
+                    window.setTimeout(function () {
+                        window.location.href = targetHref;
+                    }, 220);
+                });
+            });
+        }
+
         if (modal) {
             body.classList.add('modal-open');
 
             if (modalBackdrop) {
                 modalBackdrop.addEventListener('click', function () {
-                    window.location.href = 'index.php?action=accesses';
+                    window.location.href = 'index.php?action=accesses&page=<?= $currentPage; ?>';
                 });
             }
 
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape') {
-                    window.location.href = 'index.php?action=accesses';
+                    window.location.href = 'index.php?action=accesses&page=<?= $currentPage; ?>';
                 }
             });
 
             if (modalClose) {
                 modalClose.addEventListener('click', function (event) {
                     event.preventDefault();
-                    window.location.href = 'index.php?action=accesses';
+                    window.location.href = 'index.php?action=accesses&page=<?= $currentPage; ?>';
                 });
             }
         }

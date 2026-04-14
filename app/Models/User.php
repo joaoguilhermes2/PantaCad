@@ -56,9 +56,16 @@ final class User
     public function findById(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, nome, email, foto_perfil, ativo, nivel_acesso
-             FROM usuarios
-             WHERE id = :id
+            'SELECT u.id,
+                    u.nome,
+                    u.email,
+                    u.foto_perfil,
+                    u.ativo,
+                    u.nivel_acesso_id,
+                    na.nome AS nivel_acesso
+             FROM usuarios u
+             LEFT JOIN niveis_acesso na ON na.id = u.nivel_acesso_id
+             WHERE u.id = :id
              LIMIT 1'
         );
 
@@ -104,21 +111,62 @@ final class User
         return $stmt->fetchColumn() !== false;
     }
 
-    public function listAll(): array
+    public function countAll(): int
+    {
+        $stmt = $this->pdo->query('SELECT COUNT(*) FROM usuarios');
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function listAllPaginated(int $limit, int $offset): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT u.id,
+                    u.nome,
+                    u.email,
+                    u.nivel_acesso_id,
+                    na.nome AS nivel_acesso,
+                    u.ativo,
+                    u.foto_perfil,
+                    u.created_at
+             FROM usuarios u
+             LEFT JOIN niveis_acesso na ON na.id = u.nivel_acesso_id
+             ORDER BY u.nome ASC
+             LIMIT :limit OFFSET :offset'
+        );
+
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function listAccessLevels(): array
     {
         $stmt = $this->pdo->query(
-            'SELECT id,
-                    nome,
-                    email,
-                    nivel_acesso,
-                    ativo,
-                    foto_perfil,
-                    created_at
-             FROM usuarios
+            'SELECT id, nome
+             FROM niveis_acesso
+             WHERE ativo = TRUE
              ORDER BY nome ASC'
         );
 
         return $stmt->fetchAll() ?: [];
+    }
+
+    public function accessLevelExists(int $id): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT 1
+             FROM niveis_acesso
+             WHERE id = :id
+               AND ativo = TRUE
+             LIMIT 1'
+        );
+
+        $stmt->execute(['id' => $id]);
+
+        return $stmt->fetchColumn() !== false;
     }
 
     public function emailExists(string $email): bool
@@ -135,15 +183,15 @@ final class User
         return $stmt->fetchColumn() !== false;
     }
 
-    public function createAccess(string $nome, string $email, string $nivelAcesso, bool $ativo = true): void
+    public function createAccess(string $nome, string $email, int $nivelAcessoId, bool $ativo = true): void
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO usuarios (nome, email, senha_hash, nivel_acesso, ativo)
+            'INSERT INTO usuarios (nome, email, senha_hash, nivel_acesso_id, ativo)
              VALUES (
                 :nome,
                 :email,
                 crypt(\'123456\', gen_salt(\'bf\', 12)),
-                :nivel_acesso,
+                :nivel_acesso_id,
                 :ativo
              )'
         );
@@ -151,17 +199,18 @@ final class User
         $stmt->execute([
             'nome' => $nome,
             'email' => $email,
-            'nivel_acesso' => $nivelAcesso,
+            'nivel_acesso_id' => $nivelAcessoId,
             'ativo' => $ativo,
         ]);
     }
 
-    public function updateAccess(int $id, string $nome, string $email, bool $ativo): void
+    public function updateAccess(int $id, string $nome, string $email, int $nivelAcessoId, bool $ativo): void
     {
         $stmt = $this->pdo->prepare(
             'UPDATE usuarios
              SET nome = :nome,
                  email = :email,
+                 nivel_acesso_id = :nivel_acesso_id,
                  ativo = :ativo
              WHERE id = :id'
         );
@@ -170,6 +219,7 @@ final class User
             'id' => $id,
             'nome' => $nome,
             'email' => $email,
+            'nivel_acesso_id' => $nivelAcessoId,
             'ativo' => $ativo,
         ]);
     }

@@ -155,6 +155,7 @@ require dirname(__DIR__) . '/layouts/header.php';
 </main>
 <script>
     (function () {
+        const storageKey = 'pantacad-dashboard-menu-collapsed';
         const body = document.body;
         const toggle = document.getElementById('dashboard-toggle');
         const menuToggle = document.querySelector('[data-menu-toggle="cadastros"]');
@@ -166,9 +167,18 @@ require dirname(__DIR__) . '/layouts/header.php';
         const placeholder = document.getElementById('profile-preview-placeholder');
 
         if (toggle) {
+            toggle.setAttribute('aria-expanded', String(!body.classList.contains('dashboard-menu-collapsed')));
+        }
+
+        if (toggle) {
             toggle.addEventListener('click', function () {
                 const isCollapsed = body.classList.toggle('dashboard-menu-collapsed');
                 toggle.setAttribute('aria-expanded', String(!isCollapsed));
+
+                try {
+                    window.localStorage.setItem(storageKey, isCollapsed ? 'true' : 'false');
+                } catch (error) {
+                }
             });
         }
 

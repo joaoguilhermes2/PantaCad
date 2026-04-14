@@ -8,8 +8,6 @@ require_once dirname(__DIR__, 2) . '/core/helpers.php';
 
 final class AuthController
 {
-    private const ACCESS_LEVELS = ['Colaborador', 'Supervisor', 'Administrador', 'Dev'];
-
     public function index(): void
     {
         if ($this->isAuthenticated()) {
@@ -178,16 +176,26 @@ final class AuthController
         $this->ensureAuthenticated();
 
         $usuarioModel = new User(database());
+        $perPage = 6;
+        $currentPage = max(1, (int) ($_GET['page'] ?? 1));
+        $totalAccesses = $usuarioModel->countAll();
+        $totalPages = max(1, (int) ceil($totalAccesses / $perPage));
+        $currentPage = min($currentPage, $totalPages);
+        $offset = ($currentPage - 1) * $perPage;
         $editId = (int) ($_GET['edit'] ?? 0);
         $editAccess = $editId > 0 ? $usuarioModel->findById($editId) : null;
         $createModalOpen = isset($_GET['new']);
 
         view('auth/accesses', [
             'usuario' => $_SESSION['usuario'],
-            'accessList' => $usuarioModel->listAll(),
+            'accessList' => $usuarioModel->listAllPaginated($perPage, $offset),
             'editAccess' => $editAccess,
             'createModalOpen' => $createModalOpen,
-            'accessLevels' => self::ACCESS_LEVELS,
+            'accessLevels' => $usuarioModel->listAccessLevels(),
+            'currentPage' => $currentPage,
+            'perPage' => $perPage,
+            'totalAccesses' => $totalAccesses,
+            'totalPages' => $totalPages,
             'errorMessage' => flash('access_error'),
             'successMessage' => flash('access_success'),
             'old' => flash('access_old', []),
@@ -200,58 +208,71 @@ final class AuthController
 
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $email = trim((string) ($_POST['email'] ?? ''));
-        $nivelAcesso = trim((string) ($_POST['nivel_acesso'] ?? 'Colaborador'));
+        $nivelAcessoId = (int) ($_POST['nivel_acesso_id'] ?? 0);
+        $page = max(1, (int) ($_POST['page'] ?? 1));
         $ativo = isset($_POST['ativo']) ? (bool) $_POST['ativo'] : true;
 
         flash('access_old', [
             'nome' => $nome,
             'email' => $email,
-            'nivel_acesso' => $nivelAcesso,
+            'nivel_acesso_id' => $nivelAcessoId,
             'ativo' => $ativo,
         ]);
 
         if ($nome === '' || $email === '') {
             flash('access_error', 'Preencha nome e email para criar o acesso.');
-            redirect('index.php?action=accesses&new=1');
+            redirect('index.php?action=accesses&new=1&page=' . $page);
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             flash('access_error', 'Informe um email valido para o novo acesso.');
-            redirect('index.php?action=accesses&new=1');
-        }
-
-        if (!in_array($nivelAcesso, self::ACCESS_LEVELS, true)) {
-            flash('access_error', 'Selecione um nivel de acesso valido.');
-            redirect('index.php?action=accesses&new=1');
+            redirect('index.php?action=accesses&new=1&page=' . $page);
         }
 
         try {
             $usuarioModel = new User(database());
 
-            if ($usuarioModel->emailExists($email)) {
-                flash('access_error', 'Ja existe um acesso cadastrado com esse email.');
-                redirect('index.php?action=accesses&new=1');
+            if (!$usuarioModel->accessLevelExists($nivelAcessoId)) {
+                flash('access_error', 'Selecione um nivel de acesso valido.');
+                redirect('index.php?action=accesses&new=1&page=' . $page);
             }
 
-            $usuarioModel->createAccess($nome, $email, $nivelAcesso, $ativo);
+            if ($usuarioModel->emailExists($email)) {
+                flash('access_error', 'Ja existe um acesso cadastrado com esse email.');
+                redirect('index.php?action=accesses&new=1&page=' . $page);
+            }
+
+            $usuarioModel->createAccess($nome, $email, $nivelAcessoId, $ativo);
 
             flash('access_old', []);
             flash('access_success', 'Acesso criado com sucesso. A senha inicial do usuario sera 123456.');
-            redirect('index.php?action=accesses');
+            redirect('index.php?action=accesses&page=' . $page);
         } catch (Throwable $exception) {
             http_response_code(500);
 
             $usuarioModel = new User(database());
+            $perPage = 6;
+            $totalAccesses = $usuarioModel->countAll();
+            $totalPages = max(1, (int) ceil($totalAccesses / $perPage));
+            $page = min($page, $totalPages);
+            $offset = ($page - 1) * $perPage;
 
             view('auth/accesses', [
                 'usuario' => $_SESSION['usuario'],
-                'accessList' => $usuarioModel->listAll(),
+                'accessList' => $usuarioModel->listAllPaginated($perPage, $offset),
+                'editAccess' => null,
+                'createModalOpen' => true,
+                'accessLevels' => $usuarioModel->listAccessLevels(),
+                'currentPage' => $page,
+                'perPage' => $perPage,
+                'totalAccesses' => $totalAccesses,
+                'totalPages' => $totalPages,
                 'errorMessage' => 'Nao foi possivel criar o acesso: ' . $exception->getMessage(),
                 'successMessage' => '',
                 'old' => [
                     'nome' => $nome,
                     'email' => $email,
-                    'nivel_acesso' => $nivelAcesso,
+                    'nivel_acesso_id' => $nivelAcessoId,
                     'ativo' => $ativo,
                 ],
             ]);
@@ -265,33 +286,41 @@ final class AuthController
         $id = (int) ($_POST['id'] ?? 0);
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $email = trim((string) ($_POST['email'] ?? ''));
+        $nivelAcessoId = (int) ($_POST['nivel_acesso_id'] ?? 0);
+        $page = max(1, (int) ($_POST['page'] ?? 1));
         $ativo = isset($_POST['ativo']) ? (bool) $_POST['ativo'] : false;
 
         flash('access_old', [
             'nome' => $nome,
             'email' => $email,
+            'nivel_acesso_id' => $nivelAcessoId,
             'ativo' => $ativo,
         ]);
 
         if ($id <= 0 || $nome === '' || $email === '') {
             flash('access_error', 'Preencha corretamente os dados para atualizar o acesso.');
-            redirect('index.php?action=accesses&edit=' . $id);
+            redirect('index.php?action=accesses&edit=' . $id . '&page=' . $page);
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             flash('access_error', 'Informe um email valido para atualizar o acesso.');
-            redirect('index.php?action=accesses&edit=' . $id);
+            redirect('index.php?action=accesses&edit=' . $id . '&page=' . $page);
         }
 
         try {
             $usuarioModel = new User(database());
 
-            if ($usuarioModel->emailExistsForAnotherUser($email, $id)) {
-                flash('access_error', 'Ja existe outro acesso cadastrado com esse email.');
-                redirect('index.php?action=accesses&edit=' . $id);
+            if (!$usuarioModel->accessLevelExists($nivelAcessoId)) {
+                flash('access_error', 'Selecione um nivel de acesso valido.');
+                redirect('index.php?action=accesses&edit=' . $id . '&page=' . $page);
             }
 
-            $usuarioModel->updateAccess($id, $nome, $email, $ativo);
+            if ($usuarioModel->emailExistsForAnotherUser($email, $id)) {
+                flash('access_error', 'Ja existe outro acesso cadastrado com esse email.');
+                redirect('index.php?action=accesses&edit=' . $id . '&page=' . $page);
+            }
+
+            $usuarioModel->updateAccess($id, $nome, $email, $nivelAcessoId, $ativo);
 
             if ((int) $_SESSION['usuario']['id'] === $id) {
                 $_SESSION['usuario']['nome'] = $nome;
@@ -300,11 +329,11 @@ final class AuthController
 
             flash('access_old', []);
             flash('access_success', 'Acesso atualizado com sucesso.');
-            redirect('index.php?action=accesses');
+            redirect('index.php?action=accesses&page=' . $page);
         } catch (Throwable $exception) {
             http_response_code(500);
             flash('access_error', 'Nao foi possivel atualizar o acesso: ' . $exception->getMessage());
-            redirect('index.php?action=accesses&edit=' . $id);
+            redirect('index.php?action=accesses&edit=' . $id . '&page=' . $page);
         }
     }
 
@@ -313,15 +342,16 @@ final class AuthController
         $this->ensureAuthenticated();
 
         $id = (int) ($_POST['id'] ?? 0);
+        $page = max(1, (int) ($_POST['page'] ?? 1));
 
         if ($id <= 0) {
             flash('access_error', 'Acesso invalido para exclusao.');
-            redirect('index.php?action=accesses');
+            redirect('index.php?action=accesses&page=' . $page);
         }
 
         if ((int) $_SESSION['usuario']['id'] === $id) {
             flash('access_error', 'Nao e permitido excluir o usuario que esta logado no momento.');
-            redirect('index.php?action=accesses');
+            redirect('index.php?action=accesses&page=' . $page);
         }
 
         try {
@@ -329,11 +359,11 @@ final class AuthController
             $usuarioModel->deleteAccess($id);
 
             flash('access_success', 'Acesso excluido com sucesso.');
-            redirect('index.php?action=accesses');
+            redirect('index.php?action=accesses&page=' . $page);
         } catch (Throwable $exception) {
             http_response_code(500);
             flash('access_error', 'Nao foi possivel excluir o acesso: ' . $exception->getMessage());
-            redirect('index.php?action=accesses');
+            redirect('index.php?action=accesses&page=' . $page);
         }
     }
 
