@@ -7,7 +7,7 @@ require dirname(__DIR__) . '/layouts/header.php';
 <main class="login-shell">
     <section class="login-hero">
         <div class="login-brand">
-            <img src="IMG/Logotipo_Tetse.png" alt="Logo do sistema PantaCad">
+            <img src="IMG/Logo_Nova.png" alt="Logo do sistema PantaCad">
         </div>
     </section>
 

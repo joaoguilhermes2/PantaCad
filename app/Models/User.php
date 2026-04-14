@@ -224,9 +224,14 @@ final class User
         ]);
     }
 
-    public function deleteAccess(int $id): void
+    public function deactivateAccess(int $id): void
     {
-        $stmt = $this->pdo->prepare('DELETE FROM usuarios WHERE id = :id');
+        $stmt = $this->pdo->prepare(
+            'UPDATE usuarios
+             SET ativo = FALSE
+             WHERE id = :id'
+        );
+
         $stmt->execute(['id' => $id]);
     }
 }

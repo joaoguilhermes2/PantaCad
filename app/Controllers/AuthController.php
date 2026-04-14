@@ -345,24 +345,24 @@ final class AuthController
         $page = max(1, (int) ($_POST['page'] ?? 1));
 
         if ($id <= 0) {
-            flash('access_error', 'Acesso invalido para exclusao.');
+            flash('access_error', 'Acesso invalido para inativacao.');
             redirect('index.php?action=accesses&page=' . $page);
         }
 
         if ((int) $_SESSION['usuario']['id'] === $id) {
-            flash('access_error', 'Nao e permitido excluir o usuario que esta logado no momento.');
+            flash('access_error', 'Nao e permitido inativar o usuario que esta logado no momento.');
             redirect('index.php?action=accesses&page=' . $page);
         }
 
         try {
             $usuarioModel = new User(database());
-            $usuarioModel->deleteAccess($id);
+            $usuarioModel->deactivateAccess($id);
 
-            flash('access_success', 'Acesso excluido com sucesso.');
+            flash('access_success', 'Acesso inativado com sucesso.');
             redirect('index.php?action=accesses&page=' . $page);
         } catch (Throwable $exception) {
             http_response_code(500);
-            flash('access_error', 'Nao foi possivel excluir o acesso: ' . $exception->getMessage());
+            flash('access_error', 'Nao foi possivel inativar o acesso: ' . $exception->getMessage());
             redirect('index.php?action=accesses&page=' . $page);
         }
     }

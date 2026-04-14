@@ -1,7 +1,7 @@
 <?php
 
 $title = 'PantaCad | Acessos';
-$bodyClass = 'dashboard-page';
+$bodyClass = 'dashboard-page dashboard-page--accesses';
 $isEditing = is_array($editAccess ?? null);
 $isCreating = (bool) ($createModalOpen ?? false) && !$isEditing;
 $hasSuccessModal = ($successMessage ?? '') !== '';
@@ -25,6 +25,30 @@ $editAtivoValue = array_key_exists('ativo', $old ?? [])
 require dirname(__DIR__) . '/layouts/header.php';
 ?>
 <main class="dashboard-shell">
+    <header class="dashboard-topbar">
+        <div class="dashboard-topbar__title">
+            <img src="IMG/Logo_Nova.png" alt="Logo do sistema PantaCad">
+            <div>
+                <strong>PantaCad</strong>
+                <span>Cadastro de acessos</span>
+            </div>
+        </div>
+
+        <div class="dashboard-profile">
+            <a class="dashboard-profile__button dashboard-profile__button--static" href="index.php?action=profile">
+                <?php if (!empty($usuario['foto_perfil'])): ?>
+                    <img class="dashboard-profile__image" src="<?= htmlspecialchars((string) $usuario['foto_perfil'], ENT_QUOTES, 'UTF-8'); ?>" alt="Foto de perfil de <?= htmlspecialchars((string) $usuario['nome'], ENT_QUOTES, 'UTF-8'); ?>">
+                <?php else: ?>
+                    <span class="dashboard-profile__avatar"><?= htmlspecialchars(strtoupper(substr((string) $usuario['nome'], 0, 1)), ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
+                <span class="dashboard-profile__text">
+                    <strong><?= htmlspecialchars((string) $usuario['nome'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                    <span><?= htmlspecialchars((string) $usuario['email'], ENT_QUOTES, 'UTF-8'); ?></span>
+                </span>
+            </a>
+        </div>
+    </header>
+
     <aside class="dashboard-sidebar" id="dashboard-sidebar">
         <div>
             <div class="dashboard-sidebar__top">
@@ -68,35 +92,11 @@ require dirname(__DIR__) . '/layouts/header.php';
     </aside>
 
     <section class="dashboard-content">
-        <header class="dashboard-topbar">
-            <div class="dashboard-topbar__title">
-                <img src="IMG/Logo_Nova.png" alt="Logo do sistema PantaCad">
-                <div>
-                    <strong>PantaCad</strong>
-                    <span>Cadastro de acessos</span>
-                </div>
-            </div>
-
-            <div class="dashboard-profile">
-                <a class="dashboard-profile__button dashboard-profile__button--static" href="index.php?action=profile">
-                    <?php if (!empty($usuario['foto_perfil'])): ?>
-                        <img class="dashboard-profile__image" src="<?= htmlspecialchars((string) $usuario['foto_perfil'], ENT_QUOTES, 'UTF-8'); ?>" alt="Foto de perfil de <?= htmlspecialchars((string) $usuario['nome'], ENT_QUOTES, 'UTF-8'); ?>">
-                    <?php else: ?>
-                        <span class="dashboard-profile__avatar"><?= htmlspecialchars(strtoupper(substr((string) $usuario['nome'], 0, 1)), ENT_QUOTES, 'UTF-8'); ?></span>
-                    <?php endif; ?>
-                    <span class="dashboard-profile__text">
-                        <strong><?= htmlspecialchars((string) $usuario['nome'], ENT_QUOTES, 'UTF-8'); ?></strong>
-                        <span><?= htmlspecialchars((string) $usuario['email'], ENT_QUOTES, 'UTF-8'); ?></span>
-                    </span>
-                </a>
-            </div>
-        </header>
-
         <section class="dashboard-main">
             <section class="access-page">
                 <div class="access-page__intro">
                     <h1>Acessos do sistema</h1>
-                    <p>Cadastre os logins dos usuários que terão acesso ao PantaCad. A senha inicial será definida como <strong>123456</strong> e trocada no primeiro acesso.</p>
+                    <p>Cadastre os logins dos usuários que terão acesso ao PantaCad.</p>
                 </div>
 
                 <?php if (($errorMessage ?? '') !== ''): ?>
@@ -108,9 +108,19 @@ require dirname(__DIR__) . '/layouts/header.php';
                         <div class="access-card__header">
                             <div>
                                 <h2>Acessos cadastrados</h2>
-                                <p>Relacao atual dos usuarios com login configurado.</p>
+                                <p>Relação atual dos usuários com login configurado.</p>
                             </div>
-                            <a class="access-card__create" href="index.php?action=accesses&new=1<?= $pageQuery; ?>">Novo acesso</a>
+                            <div class="access-card__toolbar">
+                                <label class="access-search" for="access-search-input" aria-label="Buscar acessos cadastrados">
+                                    <input id="access-search-input" type="search" placeholder="Buscar por nome, email, nível ou status">
+                                    <span class="access-search__button" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" focusable="false">
+                                            <path d="M10.5 3a7.5 7.5 0 1 1-5.3 12.8A7.5 7.5 0 0 1 10.5 3zm0 2a5.5 5.5 0 1 0 3.89 1.61A5.47 5.47 0 0 0 10.5 5zm6.65 10.74 3.56 3.55-1.42 1.42-3.55-3.56 1.41-1.41z"/>
+                                        </svg>
+                                    </span>
+                                </label>
+                                <a class="access-card__create" href="index.php?action=accesses&new=1<?= $pageQuery; ?>">Novo acesso</a>
+                            </div>
                         </div>
 
                         <div class="access-table">
@@ -119,14 +129,14 @@ require dirname(__DIR__) . '/layouts/header.php';
                                     <tr>
                                         <th>Nome</th>
                                         <th>Email</th>
-                                        <th>Nivel de Acesso</th>
+                                        <th>Nível de acesso</th>
                                         <th>Status</th>
-                                        <th>Acoes</th>
+                                        <th>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($accessList as $item): ?>
-                                        <tr>
+                                        <tr class="access-row" data-search="<?= htmlspecialchars(mb_strtolower(trim((string) $item['nome'] . ' ' . (string) $item['email'] . ' ' . (string) ($item['nivel_acesso'] ?? '') . ' ' . (!empty($item['ativo']) ? 'ativo' : 'inativo')), 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
                                             <td><?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?></td>
                                             <td><?= htmlspecialchars((string) $item['email'], ENT_QUOTES, 'UTF-8'); ?></td>
                                             <td>
@@ -141,21 +151,21 @@ require dirname(__DIR__) . '/layouts/header.php';
                                                 <div class="access-actions">
                                                     <a class="access-action access-action--edit" href="index.php?action=accesses&edit=<?= (int) $item['id']; ?><?= $pageQuery; ?>" title="Editar acesso" aria-label="Editar acesso de <?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?>">
                                                         <svg viewBox="0 0 24 24" aria-hidden="true">
-                                                            <path d="M4 15.75V20h4.25L19.81 8.44l-4.25-4.25L4 15.75zm13.71-8.04a1.003 1.003 0 0 0 0-1.42l-2-2a1.003 1.003 0 0 0-1.42 0l-1.59 1.59 4.25 4.25 1.76-1.42z"/>
+                                                            <path d="M6 3h8l4 4v4h-2V8h-3V5H6v14h6v2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm11.71 9.04a1 1 0 0 1 1.41 0l.84.84a1 1 0 0 1 0 1.41l-4.92 4.92L12 20l.79-3.04 4.92-4.92z"/>
                                                         </svg>
                                                     </a>
-                                                    <form method="post" action="index.php?action=delete_access" onsubmit="return confirm('Deseja realmente excluir este acesso?');">
+                                                    <form method="post" action="index.php?action=delete_access" class="access-deactivate-form" data-access-name="<?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?>">
                                                         <input type="hidden" name="id" value="<?= (int) $item['id']; ?>">
                                                         <input type="hidden" name="page" value="<?= $currentPage; ?>">
                                                         <button
                                                             type="submit"
                                                             class="access-action access-action--delete"
-                                                            title="Excluir acesso"
-                                                            aria-label="Excluir acesso de <?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?>"
-                                                            <?= (int) $item['id'] === (int) $usuario['id'] ? 'disabled' : ''; ?>
+                                                            title="Inativar acesso"
+                                                            aria-label="Inativar acesso de <?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                            <?= (int) $item['id'] === (int) $usuario['id'] || empty($item['ativo']) ? 'disabled' : ''; ?>
                                                         >
                                                             <svg viewBox="0 0 24 24" aria-hidden="true">
-                                                                <path d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2h4v2H4V6h4l1-2z"/>
+                                                                <path d="M18.3 7.11 16.89 5.7 12 10.59 7.11 5.7 5.7 7.11 10.59 12 5.7 16.89l1.41 1.41L12 13.41l4.89 4.89 1.41-1.41L13.41 12z"/>
                                                             </svg>
                                                         </button>
                                                     </form>
@@ -168,6 +178,9 @@ require dirname(__DIR__) . '/layouts/header.php';
                                             <td colspan="5" class="access-table__empty">Nenhum acesso encontrado nesta pagina.</td>
                                         </tr>
                                     <?php endif; ?>
+                                    <tr id="access-search-empty" hidden>
+                                        <td colspan="5" class="access-table__empty">Nenhum acesso corresponde Ã busca informada.</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -237,7 +250,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                 </label>
 
                 <div class="access-form__notice">
-                    O sistema grava a senha inicial com hash no banco de dados e obriga a troca no primeiro acesso.
+                    A senha inicial será definida como <strong>"123456"</strong>, sendo necessário realizar a troca na tela de "Primeiro Acesso" para acessar o sistema.
                 </div>
 
                 <div class="access-form__actions">
@@ -306,20 +319,36 @@ require dirname(__DIR__) . '/layouts/header.php';
     <div class="access-modal access-modal--success is-open" id="access-success-modal" role="dialog" aria-modal="true" aria-labelledby="access-success-title">
         <div class="access-modal__backdrop"></div>
         <div class="access-modal__dialog">
-            <a href="index.php?action=accesses&page=<?= $currentPage; ?>" class="access-modal__close" aria-label="Fechar modal de sucesso">x</a>
-
-            <div class="access-modal__header access-modal__header--success">
-                <span class="access-modal__badge" aria-hidden="true">Sucesso</span>
-                <h2 id="access-success-title">Operacao concluida</h2>
+            <div class="access-modal__header access-modal__header--success access-modal__header--success-modern">
+                <span class="access-modal__icon access-modal__icon--success" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M9.55 16.6 5.4 12.45l1.4-1.4 2.75 2.75 7-7 1.4 1.4-8.4 8.4z"/>
+                    </svg>
+                </span>
+                <h2 id="access-success-title">Operação concluída</h2>
                 <p><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
 
             <div class="access-modal__actions">
-                <a class="access-form__submit access-form__submit--full" href="index.php?action=accesses&page=<?= $currentPage; ?>">Continuar</a>
+                <a class="access-modal__button access-modal__button--success" href="index.php?action=accesses&page=<?= $currentPage; ?>">Fechar</a>
             </div>
         </div>
     </div>
 <?php endif; ?>
+<div class="access-modal" id="access-deactivate-modal" role="dialog" aria-modal="true" aria-labelledby="access-deactivate-title" hidden>
+    <div class="access-modal__backdrop"></div>
+    <div class="access-modal__dialog">
+        <div class="access-modal__header access-modal__header--success">
+            <h2 id="access-deactivate-title">Confirmar inativação</h2>
+            <p id="access-deactivate-message">Deseja realmente inativar este acesso?</p>
+        </div>
+
+        <div class="access-modal__actions access-modal__actions--split">
+            <button type="button" class="access-modal__button access-modal__button--secondary" id="access-deactivate-cancel">Cancelar</button>
+            <button type="button" class="access-modal__button access-modal__button--danger" id="access-deactivate-confirm">Inativar acesso</button>
+        </div>
+    </div>
+</div>
 <script>
     (function () {
         const storageKey = 'pantacad-dashboard-menu-collapsed';
@@ -329,10 +358,20 @@ require dirname(__DIR__) . '/layouts/header.php';
         const menuPanel = document.querySelector('[data-menu-panel="cadastros"]');
         const menuGroup = menuToggle ? menuToggle.closest('.dashboard-menu__group') : null;
         const accessCard = document.getElementById('access-card');
+        const accessSearchInput = document.getElementById('access-search-input');
+        const accessRows = document.querySelectorAll('.access-row');
+        const accessSearchEmpty = document.getElementById('access-search-empty');
         const paginationArrows = document.querySelectorAll('.access-pagination__arrow:not(.is-disabled)');
         const modal = document.querySelector('.access-modal.is-open');
         const modalBackdrop = modal ? modal.querySelector('.access-modal__backdrop') : null;
         const modalClose = modal ? modal.querySelector('.access-modal__close') : null;
+        const deactivateModal = document.getElementById('access-deactivate-modal');
+        const deactivateBackdrop = deactivateModal ? deactivateModal.querySelector('.access-modal__backdrop') : null;
+        const deactivateCancel = document.getElementById('access-deactivate-cancel');
+        const deactivateConfirm = document.getElementById('access-deactivate-confirm');
+        const deactivateMessage = document.getElementById('access-deactivate-message');
+        const deactivateForms = document.querySelectorAll('.access-deactivate-form');
+        let pendingDeactivateForm = null;
 
         if (toggle) {
             toggle.setAttribute('aria-expanded', String(!body.classList.contains('dashboard-menu-collapsed')));
@@ -388,6 +427,85 @@ require dirname(__DIR__) . '/layouts/header.php';
             });
         }
 
+        if (accessSearchInput && accessRows.length) {
+            accessSearchInput.addEventListener('input', function () {
+                const query = accessSearchInput.value.trim().toLowerCase();
+                let visibleRows = 0;
+
+                accessRows.forEach(function (row) {
+                    const haystack = row.getAttribute('data-search') || '';
+                    const matches = query === '' || haystack.indexOf(query) !== -1;
+
+                    row.hidden = !matches;
+
+                    if (matches) {
+                        visibleRows += 1;
+                    }
+                });
+
+                if (accessSearchEmpty) {
+                    accessSearchEmpty.hidden = query === '' || visibleRows > 0;
+                }
+            });
+        }
+
+        function openDeactivateModal(form) {
+            if (!deactivateModal) {
+                return;
+            }
+
+            pendingDeactivateForm = form;
+
+            if (deactivateMessage) {
+                const accessName = form.getAttribute('data-access-name') || 'este acesso';
+                deactivateMessage.textContent = 'Deseja realmente inativar o acesso de ' + accessName + '?';
+            }
+
+            deactivateModal.hidden = false;
+            deactivateModal.classList.add('is-open');
+            body.classList.add('modal-open');
+        }
+
+        function closeDeactivateModal() {
+            if (!deactivateModal) {
+                return;
+            }
+
+            deactivateModal.classList.remove('is-open');
+            deactivateModal.hidden = true;
+            pendingDeactivateForm = null;
+
+            if (!document.querySelector('.access-modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        }
+
+        if (deactivateForms.length && deactivateModal) {
+            deactivateForms.forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    openDeactivateModal(form);
+                });
+            });
+        }
+
+        if (deactivateBackdrop) {
+            deactivateBackdrop.addEventListener('click', closeDeactivateModal);
+        }
+
+
+        if (deactivateCancel) {
+            deactivateCancel.addEventListener('click', closeDeactivateModal);
+        }
+
+        if (deactivateConfirm) {
+            deactivateConfirm.addEventListener('click', function () {
+                if (pendingDeactivateForm) {
+                    pendingDeactivateForm.submit();
+                }
+            });
+        }
+
         if (modal) {
             body.classList.add('modal-open');
 
@@ -399,6 +517,11 @@ require dirname(__DIR__) . '/layouts/header.php';
 
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape') {
+                    if (deactivateModal && !deactivateModal.hidden) {
+                        closeDeactivateModal();
+                        return;
+                    }
+
                     window.location.href = 'index.php?action=accesses&page=<?= $currentPage; ?>';
                 }
             });
@@ -409,6 +532,12 @@ require dirname(__DIR__) . '/layouts/header.php';
                     window.location.href = 'index.php?action=accesses&page=<?= $currentPage; ?>';
                 });
             }
+        } else {
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && deactivateModal && !deactivateModal.hidden) {
+                    closeDeactivateModal();
+                }
+            });
         }
     }());
 </script>

@@ -7,6 +7,30 @@ $emailValue = (string) (($old['email'] ?? '') !== '' ? $old['email'] : ($usuario
 require dirname(__DIR__) . '/layouts/header.php';
 ?>
 <main class="dashboard-shell">
+    <header class="dashboard-topbar">
+        <div class="dashboard-topbar__title">
+            <img src="IMG/Logo_Nova.png" alt="Logo do sistema PantaCad">
+            <div>
+                <strong>PantaCad</strong>
+                <span>Edicao de perfil</span>
+            </div>
+        </div>
+
+        <div class="dashboard-profile">
+            <a class="dashboard-profile__button dashboard-profile__button--static" href="index.php?action=profile">
+                <?php if (!empty($usuario['foto_perfil'])): ?>
+                    <img class="dashboard-profile__image" src="<?= htmlspecialchars((string) $usuario['foto_perfil'], ENT_QUOTES, 'UTF-8'); ?>" alt="Foto de perfil de <?= htmlspecialchars((string) $usuario['nome'], ENT_QUOTES, 'UTF-8'); ?>">
+                <?php else: ?>
+                    <span class="dashboard-profile__avatar"><?= htmlspecialchars(strtoupper(substr((string) $usuario['nome'], 0, 1)), ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
+                <span class="dashboard-profile__text">
+                    <strong><?= htmlspecialchars((string) $usuario['nome'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                    <span><?= htmlspecialchars((string) $usuario['email'], ENT_QUOTES, 'UTF-8'); ?></span>
+                </span>
+            </a>
+        </div>
+    </header>
+
     <aside class="dashboard-sidebar" id="dashboard-sidebar">
         <div>
             <div class="dashboard-sidebar__top">
@@ -50,30 +74,6 @@ require dirname(__DIR__) . '/layouts/header.php';
     </aside>
 
     <section class="dashboard-content">
-        <header class="dashboard-topbar">
-            <div class="dashboard-topbar__title">
-                <img src="IMG/Logo_Nova.png" alt="Logo do sistema PantaCad">
-                <div>
-                    <strong>PantaCad</strong>
-                    <span>Edicao de perfil</span>
-                </div>
-            </div>
-
-            <div class="dashboard-profile">
-                <a class="dashboard-profile__button dashboard-profile__button--static" href="index.php?action=profile">
-                    <?php if (!empty($usuario['foto_perfil'])): ?>
-                        <img class="dashboard-profile__image" src="<?= htmlspecialchars((string) $usuario['foto_perfil'], ENT_QUOTES, 'UTF-8'); ?>" alt="Foto de perfil de <?= htmlspecialchars((string) $usuario['nome'], ENT_QUOTES, 'UTF-8'); ?>">
-                    <?php else: ?>
-                        <span class="dashboard-profile__avatar"><?= htmlspecialchars(strtoupper(substr((string) $usuario['nome'], 0, 1)), ENT_QUOTES, 'UTF-8'); ?></span>
-                    <?php endif; ?>
-                    <span class="dashboard-profile__text">
-                        <strong><?= htmlspecialchars((string) $usuario['nome'], ENT_QUOTES, 'UTF-8'); ?></strong>
-                        <span><?= htmlspecialchars((string) $usuario['email'], ENT_QUOTES, 'UTF-8'); ?></span>
-                    </span>
-                </a>
-            </div>
-        </header>
-
         <section class="dashboard-main">
             <section class="profile-page">
                 <div class="profile-page__intro">
