@@ -14,7 +14,7 @@ final class FormLayout
     public function listTabs(): array
     {
         $stmt = $this->pdo->query(
-            'SELECT identificador_aba, nome_aba, campos
+            'SELECT nome_aba, identificador_aba, rotulo, identificador, tipo, placeholder, opcoes
              FROM formularios_layout
              WHERE ativo = TRUE
              ORDER BY created_at ASC, id ASC'
@@ -24,21 +24,24 @@ final class FormLayout
         $tabs = [];
 
         foreach ($rows as $row) {
-            $camposRaw = $row['campos'] ?? '[]';
-            $campos = json_decode(is_string($camposRaw) ? $camposRaw : '[]', true);
+            $tabIdentifier = (string) ($row['identificador_aba'] ?? '');
 
-            if (!is_array($campos)) {
-                $campos = [];
+            if ($tabIdentifier === '') {
+                continue;
             }
 
-            $tabs[] = [
-                'id' => (string) ($row['identificador_aba'] ?? ''),
-                'name' => (string) ($row['nome_aba'] ?? 'Aba personalizada'),
-                'fields' => $this->normalizeFields($campos),
-            ];
+            if (!isset($tabs[$tabIdentifier])) {
+                $tabs[$tabIdentifier] = [
+                    'id' => $tabIdentifier,
+                    'name' => (string) ($row['nome_aba'] ?? 'Aba personalizada'),
+                    'fields' => [],
+                ];
+            }
+
+            $tabs[$tabIdentifier]['fields'][] = $this->normalizeFieldRow($row);
         }
 
-        return $tabs;
+        return array_values($tabs);
     }
 
     /**
@@ -47,28 +50,69 @@ final class FormLayout
     public function addTab(string $name, array $fields, ?int $createdByUserId = null): void
     {
         $identifier = $this->buildUniqueIdentifier($name);
-        $payload = json_encode($this->normalizeFields($fields), JSON_UNESCAPED_UNICODE);
+        $normalizedFields = $this->normalizeFields($fields);
 
-        if (!is_string($payload)) {
-            throw new RuntimeException('Nao foi possivel serializar os campos do formulario.');
+        if ($normalizedFields === []) {
+            throw new RuntimeException('Nao foi possivel preparar os campos do formulario.');
         }
 
         $stmt = $this->pdo->prepare(
-            'INSERT INTO formularios_layout (nome_aba, identificador_aba, campos, criado_por_usuario_id)
-             VALUES (:nome_aba, :identificador_aba, CAST(:campos AS jsonb), :criado_por_usuario_id)'
+            'INSERT INTO formularios_layout (
+                nome_aba,
+                identificador_aba,
+                rotulo,
+                identificador,
+                tipo,
+                placeholder,
+                opcoes,
+                criado_por_usuario_id
+             ) VALUES (
+                :nome_aba,
+                :identificador_aba,
+                :rotulo,
+                :identificador,
+                :tipo,
+                :placeholder,
+                CAST(:opcoes AS jsonb),
+                :criado_por_usuario_id
+             )'
         );
 
-        $stmt->bindValue(':nome_aba', $name);
-        $stmt->bindValue(':identificador_aba', $identifier);
-        $stmt->bindValue(':campos', $payload);
+        $this->pdo->beginTransaction();
 
-        if ($createdByUserId === null) {
-            $stmt->bindValue(':criado_por_usuario_id', null, PDO::PARAM_NULL);
-        } else {
-            $stmt->bindValue(':criado_por_usuario_id', $createdByUserId, PDO::PARAM_INT);
+        try {
+            foreach ($normalizedFields as $field) {
+                $optionsPayload = json_encode($field['options'], JSON_UNESCAPED_UNICODE);
+
+                if (!is_string($optionsPayload)) {
+                    throw new RuntimeException('Nao foi possivel serializar as opcoes do campo.');
+                }
+
+                $stmt->bindValue(':nome_aba', $name);
+                $stmt->bindValue(':identificador_aba', $identifier);
+                $stmt->bindValue(':rotulo', $field['label']);
+                $stmt->bindValue(':identificador', $field['name']);
+                $stmt->bindValue(':tipo', $field['type']);
+                $stmt->bindValue(':placeholder', $field['placeholder']);
+                $stmt->bindValue(':opcoes', $optionsPayload);
+
+                if ($createdByUserId === null) {
+                    $stmt->bindValue(':criado_por_usuario_id', null, PDO::PARAM_NULL);
+                } else {
+                    $stmt->bindValue(':criado_por_usuario_id', $createdByUserId, PDO::PARAM_INT);
+                }
+
+                $stmt->execute();
+            }
+
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+            throw $exception;
         }
-
-        $stmt->execute();
     }
 
     private function buildUniqueIdentifier(string $name): string
@@ -154,5 +198,39 @@ final class FormLayout
         }
 
         return $normalized;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array{name:string,label:string,type:string,placeholder:string,options:array<int, string>}
+     */
+    private function normalizeFieldRow(array $row): array
+    {
+        $optionsRaw = $row['opcoes'] ?? '[]';
+        $options = json_decode(is_string($optionsRaw) ? $optionsRaw : '[]', true);
+
+        if (!is_array($options)) {
+            $options = [];
+        }
+
+        $type = trim((string) ($row['tipo'] ?? 'text'));
+        $allowedTypes = ['text', 'email', 'number', 'date', 'textarea', 'select'];
+
+        if (!in_array($type, $allowedTypes, true)) {
+            $type = 'text';
+        }
+
+        return [
+            'name' => trim((string) ($row['identificador'] ?? '')),
+            'label' => trim((string) ($row['rotulo'] ?? '')),
+            'type' => $type,
+            'placeholder' => trim((string) ($row['placeholder'] ?? '')),
+            'options' => $type === 'select'
+                ? array_values(array_filter(
+                    array_map(static fn (mixed $option): string => trim((string) $option), $options),
+                    static fn (string $option): bool => $option !== ''
+                ))
+                : [],
+        ];
     }
 }

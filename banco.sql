@@ -35,7 +35,11 @@ CREATE TABLE IF NOT EXISTS formularios_layout (
     id BIGSERIAL PRIMARY KEY,
     nome_aba VARCHAR(120) NOT NULL,
     identificador_aba VARCHAR(120) NOT NULL,
-    campos JSONB NOT NULL,
+    rotulo VARCHAR(150) NOT NULL,
+    identificador VARCHAR(120) NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    placeholder VARCHAR(255) NOT NULL DEFAULT '',
+    opcoes JSONB NOT NULL DEFAULT '[]'::jsonb,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     criado_por_usuario_id BIGINT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -56,9 +60,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_usuarios_email
     ON usuarios (LOWER(email));
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_formularios_layout_identificador_aba
-    ON formularios_layout (LOWER(identificador_aba));
+    ON formularios_layout (LOWER(identificador_aba), LOWER(identificador));
 
-/* Criação das Triggers */
+/* Criacao das triggers */
 
 CREATE TRIGGER trg_niveis_acesso_updated_at
 BEFORE UPDATE ON niveis_acesso
@@ -75,7 +79,7 @@ BEFORE UPDATE ON formularios_layout
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
-/* Caso Necessário Deletar
+/* Caso necessario, deletar
 
 DROP TRIGGER IF EXISTS trg_niveis_acesso_updated_at ON niveis_acesso;
 DROP TRIGGER IF EXISTS trg_usuarios_updated_at ON usuarios;
