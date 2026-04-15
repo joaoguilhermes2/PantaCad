@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/config/database.php';
 require_once dirname(__DIR__) . '/Models/User.php';
+require_once dirname(__DIR__) . '/Models/FormLayout.php';
 require_once dirname(__DIR__, 2) . '/core/helpers.php';
 
 final class AuthController
@@ -175,9 +176,114 @@ final class AuthController
     {
         $this->ensureAuthenticated();
 
+        $formLayoutModel = new FormLayout(database());
+
         view('auth/users', [
             'usuario' => $_SESSION['usuario'],
+            'customTabs' => $formLayoutModel->listTabs(),
         ]);
+    }
+
+    public function formBuilder(): void
+    {
+        $this->ensureAuthenticated();
+
+        $formLayoutModel = new FormLayout(database());
+
+        view('auth/form-builder', [
+            'usuario' => $_SESSION['usuario'],
+            'customTabs' => $formLayoutModel->listTabs(),
+            'errorMessage' => flash('form_builder_error'),
+            'successMessage' => flash('form_builder_success'),
+            'old' => flash('form_builder_old', []),
+        ]);
+    }
+
+    public function storeFormLayout(): void
+    {
+        $this->ensureAuthenticated();
+
+        $tabName = trim((string) ($_POST['tab_name'] ?? ''));
+        $fieldLabels = $_POST['field_label'] ?? [];
+        $fieldNames = $_POST['field_name'] ?? [];
+        $fieldTypes = $_POST['field_type'] ?? [];
+        $fieldPlaceholders = $_POST['field_placeholder'] ?? [];
+        $fieldOptions = $_POST['field_options'] ?? [];
+
+        flash('form_builder_old', [
+            'tab_name' => $tabName,
+            'field_label' => $fieldLabels,
+            'field_name' => $fieldNames,
+            'field_type' => $fieldTypes,
+            'field_placeholder' => $fieldPlaceholders,
+            'field_options' => $fieldOptions,
+        ]);
+
+        if ($tabName === '') {
+            flash('form_builder_error', 'Informe o nome da aba para salvar o formulario.');
+            redirect('index.php?action=form_builder');
+        }
+
+        if (!is_array($fieldLabels) || !is_array($fieldNames) || !is_array($fieldTypes) || !is_array($fieldPlaceholders) || !is_array($fieldOptions)) {
+            flash('form_builder_error', 'Informe pelo menos um campo valido para a nova aba.');
+            redirect('index.php?action=form_builder');
+        }
+
+        $fields = [];
+
+        foreach ($fieldLabels as $index => $rawLabel) {
+            $label = trim((string) $rawLabel);
+            $name = trim((string) ($fieldNames[$index] ?? ''));
+            $type = trim((string) ($fieldTypes[$index] ?? 'text'));
+            $placeholder = trim((string) ($fieldPlaceholders[$index] ?? ''));
+            $optionsRaw = trim((string) ($fieldOptions[$index] ?? ''));
+
+            if ($label === '' || $name === '') {
+                continue;
+            }
+
+            $allowedTypes = ['text', 'email', 'number', 'date', 'textarea', 'select'];
+
+            if (!in_array($type, $allowedTypes, true)) {
+                $type = 'text';
+            }
+
+            $options = [];
+
+            if ($type === 'select' && $optionsRaw !== '') {
+                $options = array_values(array_filter(array_map('trim', explode(',', $optionsRaw)), static fn (string $option): bool => $option !== ''));
+            }
+
+            $fields[] = [
+                'name' => $this->sanitizeFieldName($name),
+                'label' => $label,
+                'type' => $type,
+                'placeholder' => $placeholder,
+                'options' => $options,
+            ];
+        }
+
+        if ($fields === []) {
+            flash('form_builder_error', 'Adicione ao menos um campo preenchendo rótulo e identificador.');
+            redirect('index.php?action=form_builder');
+        }
+
+        try {
+            $formLayoutModel = new FormLayout(database());
+            $formLayoutModel->addTab(
+                $tabName,
+                $fields,
+                isset($_SESSION['usuario']['id']) ? (int) $_SESSION['usuario']['id'] : null
+            );
+
+            flash('form_builder_old', []);
+            flash('form_builder_success', 'Aba e campos salvos com sucesso. Eles ja estao disponiveis em Cadastro de usuarios.');
+
+            redirect('index.php?action=form_builder');
+        } catch (Throwable $exception) {
+            flash('form_builder_error', 'Nao foi possivel salvar o formulario: ' . $exception->getMessage());
+            redirect('index.php?action=form_builder');
+        }
     }
 
     public function accesses(): void
@@ -473,6 +579,15 @@ final class AuthController
         if (!$this->needsFirstAccess()) {
             redirect('index.php?action=dashboard');
         }
+    }
+
+    private function sanitizeFieldName(string $value): string
+    {
+        $normalized = trim(mb_strtolower($value, 'UTF-8'));
+        $normalized = preg_replace('/[^a-z0-9_]+/u', '_', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $normalized) ?: $normalized) ?? '';
+        $normalized = trim($normalized, '_');
+
+        return $normalized !== '' ? $normalized : 'campo_customizado';
     }
 
     private function storeProfilePhoto(mixed $file): ?string

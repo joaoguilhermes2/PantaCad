@@ -2,6 +2,119 @@
 
 $title = 'PantaCad | Usuarios';
 $bodyClass = 'dashboard-page';
+$defaultTabs = [
+    [
+        'id' => 'dados-pessoais',
+        'name' => 'Dados Pessoais',
+        'fields' => [
+            [
+                'name' => 'nome',
+                'label' => 'Nome completo',
+                'type' => 'text',
+                'placeholder' => 'Digite o nome completo',
+                'options' => [],
+            ],
+            [
+                'name' => 'cpf',
+                'label' => 'CPF',
+                'type' => 'text',
+                'placeholder' => '000.000.000-00',
+                'options' => [],
+            ],
+            [
+                'name' => 'data_nascimento',
+                'label' => 'Data de nascimento',
+                'type' => 'date',
+                'placeholder' => '',
+                'options' => [],
+            ],
+            [
+                'name' => 'genero',
+                'label' => 'Genero',
+                'type' => 'select',
+                'placeholder' => '',
+                'options' => ['Feminino', 'Masculino', 'Outro'],
+            ],
+        ],
+    ],
+    [
+        'id' => 'contato',
+        'name' => 'Contato',
+        'fields' => [
+            [
+                'name' => 'email',
+                'label' => 'Email',
+                'type' => 'email',
+                'placeholder' => 'nome@empresa.com',
+                'options' => [],
+            ],
+            [
+                'name' => 'telefone',
+                'label' => 'Telefone',
+                'type' => 'text',
+                'placeholder' => '(00) 00000-0000',
+                'options' => [],
+            ],
+            [
+                'name' => 'celular',
+                'label' => 'Celular',
+                'type' => 'text',
+                'placeholder' => '(00) 00000-0000',
+                'options' => [],
+            ],
+        ],
+    ],
+    [
+        'id' => 'endereco',
+        'name' => 'Endereco',
+        'fields' => [
+            [
+                'name' => 'cep',
+                'label' => 'CEP',
+                'type' => 'text',
+                'placeholder' => '00000-000',
+                'options' => [],
+            ],
+            [
+                'name' => 'logradouro',
+                'label' => 'Logradouro',
+                'type' => 'text',
+                'placeholder' => 'Rua, avenida, etc.',
+                'options' => [],
+            ],
+            [
+                'name' => 'numero',
+                'label' => 'Numero',
+                'type' => 'text',
+                'placeholder' => 'Ex.: 120',
+                'options' => [],
+            ],
+            [
+                'name' => 'bairro',
+                'label' => 'Bairro',
+                'type' => 'text',
+                'placeholder' => 'Bairro',
+                'options' => [],
+            ],
+            [
+                'name' => 'cidade',
+                'label' => 'Cidade',
+                'type' => 'text',
+                'placeholder' => 'Cidade',
+                'options' => [],
+            ],
+            [
+                'name' => 'uf',
+                'label' => 'UF',
+                'type' => 'text',
+                'placeholder' => 'MS',
+                'options' => [],
+            ],
+        ],
+    ],
+];
+$tabs = array_merge($defaultTabs, is_array($customTabs ?? null) ? $customTabs : []);
+$firstTabId = (string) (($tabs[0]['id'] ?? 'dados-pessoais'));
 require dirname(__DIR__) . '/layouts/header.php';
 ?>
 <main class="dashboard-shell">
@@ -61,7 +174,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                     <div class="dashboard-menu__submenu" id="menu-cadastros" data-menu-panel="cadastros">
                         <a class="dashboard-menu__subitem dashboard-menu__subitem--active" href="index.php?action=users">Usuarios</a>
                         <a class="dashboard-menu__subitem" href="index.php?action=accesses">Acessos</a>
-                        <a class="dashboard-menu__subitem" href="#">Formulário</a>
+                        <a class="dashboard-menu__subitem" href="index.php?action=form_builder">Formulário</a>
                     </div>
                 </div>
             </nav>
@@ -82,92 +195,57 @@ require dirname(__DIR__) . '/layouts/header.php';
 
                 <article class="users-card">
                     <div class="users-tabs" role="tablist" aria-label="Abas do cadastro de usuario">
-                        <button type="button" class="users-tabs__button is-active" data-user-tab="dados-pessoais" role="tab" aria-selected="true">Dados Pessoais</button>
-                        <button type="button" class="users-tabs__button" data-user-tab="contato" role="tab" aria-selected="false">Contato</button>
-                        <button type="button" class="users-tabs__button" data-user-tab="endereco" role="tab" aria-selected="false">Endereco</button>
+                        <?php foreach ($tabs as $index => $tab): ?>
+                            <button
+                                type="button"
+                                class="users-tabs__button <?= $index === 0 ? 'is-active' : ''; ?>"
+                                data-user-tab="<?= htmlspecialchars((string) $tab['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                role="tab"
+                                aria-selected="<?= $index === 0 ? 'true' : 'false'; ?>"
+                            >
+                                <?= htmlspecialchars((string) $tab['name'], ENT_QUOTES, 'UTF-8'); ?>
+                            </button>
+                        <?php endforeach; ?>
                     </div>
 
                     <form class="users-form" action="#" method="post" autocomplete="off">
-                        <section class="users-tab-panel is-active" data-user-panel="dados-pessoais" role="tabpanel">
-                            <fieldset class="users-section">
-                                <legend>Informacoes Gerais</legend>
-                                <div class="users-form__grid">
-                                    <label for="usuario-nome">
-                                        Nome completo
-                                        <input id="usuario-nome" name="nome" type="text" placeholder="Digite o nome completo">
-                                    </label>
-                                    <label for="usuario-cpf">
-                                        CPF
-                                        <input id="usuario-cpf" name="cpf" type="text" placeholder="000.000.000-00">
-                                    </label>
-                                    <label for="usuario-data-nascimento">
-                                        Data de nascimento
-                                        <input id="usuario-data-nascimento" name="data_nascimento" type="date">
-                                    </label>
-                                    <label for="usuario-genero">
-                                        Genero
-                                        <select id="usuario-genero" name="genero">
-                                            <option value="">Selecione</option>
-                                            <option value="feminino">Feminino</option>
-                                            <option value="masculino">Masculino</option>
-                                            <option value="outro">Outro</option>
-                                        </select>
-                                    </label>
-                                </div>
-                            </fieldset>
-                        </section>
-
-                        <section class="users-tab-panel" data-user-panel="contato" role="tabpanel" hidden>
-                            <fieldset class="users-section">
-                                <legend>Canais de Contato</legend>
-                                <div class="users-form__grid">
-                                    <label for="usuario-email">
-                                        Email
-                                        <input id="usuario-email" name="email" type="email" placeholder="nome@empresa.com">
-                                    </label>
-                                    <label for="usuario-telefone">
-                                        Telefone
-                                        <input id="usuario-telefone" name="telefone" type="text" placeholder="(00) 00000-0000">
-                                    </label>
-                                    <label for="usuario-celular">
-                                        Celular
-                                        <input id="usuario-celular" name="celular" type="text" placeholder="(00) 00000-0000">
-                                    </label>
-                                </div>
-                            </fieldset>
-                        </section>
-
-                        <section class="users-tab-panel" data-user-panel="endereco" role="tabpanel" hidden>
-                            <fieldset class="users-section">
-                                <legend>Endereco Residencial</legend>
-                                <div class="users-form__grid users-form__grid--address">
-                                    <label for="usuario-cep">
-                                        CEP
-                                        <input id="usuario-cep" name="cep" type="text" placeholder="00000-000">
-                                    </label>
-                                    <label for="usuario-logradouro" class="users-form__field--wide">
-                                        Logradouro
-                                        <input id="usuario-logradouro" name="logradouro" type="text" placeholder="Rua, avenida, etc.">
-                                    </label>
-                                    <label for="usuario-numero">
-                                        Numero
-                                        <input id="usuario-numero" name="numero" type="text" placeholder="Ex.: 120">
-                                    </label>
-                                    <label for="usuario-bairro">
-                                        Bairro
-                                        <input id="usuario-bairro" name="bairro" type="text" placeholder="Bairro">
-                                    </label>
-                                    <label for="usuario-cidade">
-                                        Cidade
-                                        <input id="usuario-cidade" name="cidade" type="text" placeholder="Cidade">
-                                    </label>
-                                    <label for="usuario-uf">
-                                        UF
-                                        <input id="usuario-uf" name="uf" type="text" maxlength="2" placeholder="MS">
-                                    </label>
-                                </div>
-                            </fieldset>
-                        </section>
+                        <?php foreach ($tabs as $tabIndex => $tab): ?>
+                            <section class="users-tab-panel <?= $tabIndex === 0 ? 'is-active' : ''; ?>" data-user-panel="<?= htmlspecialchars((string) $tab['id'], ENT_QUOTES, 'UTF-8'); ?>" role="tabpanel" <?= $tabIndex === 0 ? '' : 'hidden'; ?>>
+                                <fieldset class="users-section">
+                                    <legend><?= htmlspecialchars((string) $tab['name'], ENT_QUOTES, 'UTF-8'); ?></legend>
+                                    <div class="users-form__grid <?= (string) $tab['id'] === 'endereco' ? 'users-form__grid--address' : ''; ?>">
+                                        <?php foreach (($tab['fields'] ?? []) as $field): ?>
+                                            <label for="usuario-<?= htmlspecialchars((string) $tab['id'] . '-' . (string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>" class="<?= (string) ($field['name'] ?? '') === 'logradouro' ? 'users-form__field--wide' : ''; ?>">
+                                                <?= htmlspecialchars((string) ($field['label'] ?? 'Campo'), ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php $fieldType = (string) ($field['type'] ?? 'text'); ?>
+                                                <?php if ($fieldType === 'textarea'): ?>
+                                                    <textarea
+                                                        id="usuario-<?= htmlspecialchars((string) $tab['id'] . '-' . (string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        name="<?= htmlspecialchars((string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        placeholder="<?= htmlspecialchars((string) ($field['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                    ></textarea>
+                                                <?php elseif ($fieldType === 'select'): ?>
+                                                    <select id="usuario-<?= htmlspecialchars((string) $tab['id'] . '-' . (string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>" name="<?= htmlspecialchars((string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>">
+                                                        <option value="">Selecione</option>
+                                                        <?php foreach (($field['options'] ?? []) as $option): ?>
+                                                            <option value="<?= htmlspecialchars((string) $option, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars((string) $option, ENT_QUOTES, 'UTF-8'); ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                <?php else: ?>
+                                                    <input
+                                                        id="usuario-<?= htmlspecialchars((string) $tab['id'] . '-' . (string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        name="<?= htmlspecialchars((string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        type="<?= htmlspecialchars($fieldType, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        placeholder="<?= htmlspecialchars((string) ($field['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        <?= (string) ($field['name'] ?? '') === 'uf' ? 'maxlength="2"' : ''; ?>
+                                                    >
+                                                <?php endif; ?>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </fieldset>
+                            </section>
+                        <?php endforeach; ?>
 
                         <div class="users-form__actions">
                             <a href="index.php?action=dashboard" class="users-form__cancel">Voltar</a>

@@ -2353,3 +2353,137 @@ body.modal-open {
         grid-column: span 1;
     }
 }
+.form-builder-page {
+    display: grid;
+    gap: 20px;
+}
+
+.form-builder-page__intro h1 {
+    margin: 0;
+    font-size: 1.85rem;
+    color: #0f2449;
+}
+
+.form-builder-page__intro p {
+    margin-top: 8px;
+    color: #5b6b83;
+}
+
+.form-builder-card,
+.form-builder-list-card {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #d4e0ef;
+    border-radius: 14px;
+    padding: 22px;
+}
+
+.form-builder-form {
+    margin-top: 0;
+    display: grid;
+    gap: 16px;
+}
+
+.form-builder-fields {
+    border: 1px solid #d9e4f2;
+    border-radius: 12px;
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+    background: #f8fbff;
+}
+
+.form-builder-fields__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.form-builder-fields__header h2,
+.form-builder-list-card h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #16315f;
+}
+
+.form-builder-add {
+    width: auto;
+    min-height: 38px;
+    border-radius: 8px;
+    padding: 0 14px;
+    background: #294f8a;
+}
+
+.form-builder-field {
+    border: 1px solid #d7e3f2;
+    border-radius: 10px;
+    padding: 12px;
+    background: #ffffff;
+}
+
+.form-builder-field__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.form-builder-field__options.is-hidden {
+    display: none;
+}
+
+.form-builder-field__remove {
+    margin-top: 6px;
+    width: auto;
+    min-height: 34px;
+    border-radius: 8px;
+    padding: 0 12px;
+    background: #d74d4d;
+}
+
+.form-builder-form__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.form-builder-list-card ul {
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+.form-builder-list-card li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #dbe5f3;
+    border-radius: 8px;
+    background: #f9fbff;
+}
+
+.users-form textarea {
+    width: 100%;
+    min-height: 110px;
+    margin-top: 8px;
+    padding: 14px 16px;
+    border: 1px solid #c9d6e8;
+    border-radius: 12px;
+    resize: vertical;
+    font-size: 1rem;
+    font-family: inherit;
+    background: #fefefe;
+}
+
+@media (max-width: 900px) {
+    .form-builder-field__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-builder-form__actions {
+        flex-direction: column;
+    }
+}

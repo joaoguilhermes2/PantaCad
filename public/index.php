@@ -40,6 +40,11 @@ if ($requestMethod === 'POST' && $action === 'delete_access') {
     return;
 }
 
+if ($requestMethod === 'POST' && $action === 'store_form_layout') {
+    $controller->storeFormLayout();
+    return;
+}
+
 match ($action) {
     'accesses' => $controller->accesses(),
     'users' => $controller->users(),
@@ -47,5 +52,6 @@ match ($action) {
     'profile' => $controller->profile(),
     'logout' => $controller->logout(),
     'dashboard' => $controller->dashboard(),
+    'form_builder' => $controller->formBuilder(),
     default => $controller->index(),
 };
