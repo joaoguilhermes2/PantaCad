@@ -97,7 +97,7 @@ require dirname(__DIR__) . '/layouts/header.php';
 
                 <article class="form-builder-card">
                     <form method="post" action="index.php?action=store_form_layout" class="form-builder-form" id="form-builder-form">
-                        <label for="form-builder-tab-name">
+                        <label for="form-builder-tab-name" class="form-builder-form__tab-name">
                             Nome da nova aba
                             <input id="form-builder-tab-name" name="tab_name" type="text" value="<?= htmlspecialchars($oldTabName, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Ex.: Documentos" required>
                         </label>
@@ -121,6 +121,10 @@ require dirname(__DIR__) . '/layouts/header.php';
                                                 <input type="text" name="field_name[]" value="<?= htmlspecialchars((string) ($oldNames[$index] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" placeholder="Ex.: numero_documento" required>
                                             </label>
                                             <label>
+                                                Placeholder
+                                                <input type="text" name="field_placeholder[]" value="<?= htmlspecialchars((string) ($oldPlaceholders[$index] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" placeholder="Ex.: Digite aqui">
+                                            </label>
+                                            <label>
                                                 Tipo
                                                 <select name="field_type[]" data-field-type>
                                                     <?php $selectedType = (string) ($oldTypes[$index] ?? 'text'); ?>
@@ -132,10 +136,6 @@ require dirname(__DIR__) . '/layouts/header.php';
                                                     <option value="select" <?= $selectedType === 'select' ? 'selected' : ''; ?>>Selecao</option>
                                                 </select>
                                             </label>
-                                            <label>
-                                                Placeholder
-                                                <input type="text" name="field_placeholder[]" value="<?= htmlspecialchars((string) ($oldPlaceholders[$index] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" placeholder="Ex.: Digite aqui">
-                                            </label>
                                             <label class="form-builder-field__options <?= $selectedType === 'select' ? '' : 'is-hidden'; ?>" data-field-options>
                                                 Opcoes (separadas por virgula)
                                                 <input type="text" name="field_options[]" value="<?= htmlspecialchars((string) ($oldOptions[$index] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" placeholder="Ex.: Opcao A, Opcao B">
@@ -144,6 +144,12 @@ require dirname(__DIR__) . '/layouts/header.php';
                                         <button type="button" class="form-builder-field__remove" data-remove-field>Remover</button>
                                     </article>
                                 <?php endfor; ?>
+                            </div>
+
+                            <div class="form-builder-pagination" id="form-builder-pagination" hidden>
+                                <button type="button" class="form-builder-pagination__arrow" id="form-builder-prev-page" aria-label="Pagina anterior">&lt;</button>
+                                <span class="form-builder-pagination__info" id="form-builder-page-info">Pagina 1 de 1</span>
+                                <button type="button" class="form-builder-pagination__arrow" id="form-builder-next-page" aria-label="Proxima pagina">&gt;</button>
                             </div>
                         </section>
 
@@ -159,9 +165,32 @@ require dirname(__DIR__) . '/layouts/header.php';
                         <h2>Abas personalizadas criadas</h2>
                         <ul>
                             <?php foreach ($customTabs as $tab): ?>
+                                <?php
+                                $tabPayload = json_encode([
+                                    'name' => (string) ($tab['name'] ?? 'Aba'),
+                                    'fields' => is_array($tab['fields'] ?? null) ? $tab['fields'] : [],
+                                ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS);
+                                ?>
                                 <li>
                                     <strong><?= htmlspecialchars((string) ($tab['name'] ?? 'Aba'), ENT_QUOTES, 'UTF-8'); ?></strong>
-                                    <span><?= count(is_array($tab['fields'] ?? null) ? $tab['fields'] : []); ?> campo(s)</span>
+                                    <div class="form-builder-tab-actions">
+                                        <button
+                                            type="button"
+                                            class="form-builder-tab-action form-builder-tab-action--edit"
+                                            aria-label="Editar aba <?= htmlspecialchars((string) ($tab['name'] ?? 'Aba'), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-open-tab-edit
+                                            data-tab='<?= htmlspecialchars((string) ($tabPayload ?: '{"name":"Aba","fields":[]}'), ENT_QUOTES, 'UTF-8'); ?>'
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M6 3h8l4 4v4h-2V8h-3V5H6v14h6v2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm11.71 9.04a1 1 0 0 1 1.41 0l.84.84a1 1 0 0 1 0 1.41l-4.92 4.92L12 20l.79-3.04 4.92-4.92z"/>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="form-builder-tab-action form-builder-tab-action--delete" aria-label="Excluir aba <?= htmlspecialchars((string) ($tab['name'] ?? 'Aba'), ENT_QUOTES, 'UTF-8'); ?>">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M18.3 7.11 16.89 5.7 12 10.59 7.11 5.7 5.7 7.11 10.59 12 5.7 16.89l1.41 1.41L12 13.41l4.89 4.89 1.41-1.41L13.41 12z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
@@ -171,6 +200,34 @@ require dirname(__DIR__) . '/layouts/header.php';
         </section>
     </section>
 </main>
+
+<div class="access-modal form-builder-edit-modal" id="form-builder-edit-modal" role="dialog" aria-modal="true" aria-labelledby="form-builder-edit-title" hidden>
+    <div class="access-modal__backdrop" data-close-tab-edit></div>
+    <div class="access-modal__dialog">
+        <button type="button" class="access-modal__close" data-close-tab-edit aria-label="Fechar modal de edicao da aba">x</button>
+
+        <div class="access-modal__header">
+            <h2 id="form-builder-edit-title">Editar aba personalizada</h2>
+            <p>Revise o nome da aba e os campos cadastrados.</p>
+        </div>
+
+        <div class="form-builder-edit-modal__body">
+            <label for="form-builder-edit-tab-name">
+                Nome da aba
+                <input id="form-builder-edit-tab-name" type="text">
+            </label>
+
+            <div class="form-builder-edit-modal__fields">
+                <h3>Campos cadastrados</h3>
+                <div id="form-builder-edit-fields"></div>
+            </div>
+        </div>
+
+        <div class="access-modal__actions">
+            <button type="button" class="access-modal__button access-modal__button--secondary" data-close-tab-edit>Fechar</button>
+        </div>
+    </div>
+</div>
 
 <template id="form-builder-field-template">
     <article class="form-builder-field" data-field-item>
@@ -184,6 +241,10 @@ require dirname(__DIR__) . '/layouts/header.php';
                 <input type="text" name="field_name[]" placeholder="Ex.: numero_documento" required>
             </label>
             <label>
+                Placeholder
+                <input type="text" name="field_placeholder[]" placeholder="Ex.: Digite aqui">
+            </label>
+            <label>
                 Tipo
                 <select name="field_type[]" data-field-type>
                     <option value="text">Texto</option>
@@ -193,10 +254,6 @@ require dirname(__DIR__) . '/layouts/header.php';
                     <option value="textarea">Texto longo</option>
                     <option value="select">Selecao</option>
                 </select>
-            </label>
-            <label>
-                Placeholder
-                <input type="text" name="field_placeholder[]" placeholder="Ex.: Digite aqui">
             </label>
             <label class="form-builder-field__options is-hidden" data-field-options>
                 Opcoes (separadas por virgula)
@@ -218,6 +275,17 @@ require dirname(__DIR__) . '/layouts/header.php';
         const fieldList = document.getElementById('form-builder-field-list');
         const addFieldButton = document.getElementById('form-builder-add-field');
         const fieldTemplate = document.getElementById('form-builder-field-template');
+        const fieldPagination = document.getElementById('form-builder-pagination');
+        const fieldPrevPageButton = document.getElementById('form-builder-prev-page');
+        const fieldNextPageButton = document.getElementById('form-builder-next-page');
+        const fieldPageInfo = document.getElementById('form-builder-page-info');
+        const fieldPageSize = 3;
+        let currentFieldPage = 1;
+        const tabEditModal = document.getElementById('form-builder-edit-modal');
+        const tabEditFields = document.getElementById('form-builder-edit-fields');
+        const tabEditName = document.getElementById('form-builder-edit-tab-name');
+        const tabEditButtons = Array.from(document.querySelectorAll('[data-open-tab-edit]'));
+        const tabEditCloseButtons = Array.from(document.querySelectorAll('[data-close-tab-edit]'));
 
         if (toggle) {
             toggle.setAttribute('aria-expanded', String(!body.classList.contains('dashboard-menu-collapsed')));
@@ -257,6 +325,50 @@ require dirname(__DIR__) . '/layouts/header.php';
             optionsWrapper.classList.toggle('is-hidden', typeSelect.value !== 'select');
         }
 
+        function getFieldItems() {
+            if (!fieldList) {
+                return [];
+            }
+
+            return Array.from(fieldList.querySelectorAll('[data-field-item]'));
+        }
+
+        function updateFieldPagination() {
+            const items = getFieldItems();
+            const totalPages = Math.max(1, Math.ceil(items.length / fieldPageSize));
+
+            if (currentFieldPage > totalPages) {
+                currentFieldPage = totalPages;
+            }
+
+            const startIndex = (currentFieldPage - 1) * fieldPageSize;
+            const endIndex = startIndex + fieldPageSize;
+
+            items.forEach(function (item, index) {
+                item.hidden = index < startIndex || index >= endIndex;
+            });
+
+            if (fieldPagination) {
+                fieldPagination.hidden = items.length <= fieldPageSize;
+            }
+
+            if (fieldPageInfo) {
+                fieldPageInfo.textContent = 'Pagina ' + String(currentFieldPage) + ' de ' + String(totalPages);
+            }
+
+            if (fieldPrevPageButton) {
+                const isDisabled = currentFieldPage <= 1;
+                fieldPrevPageButton.disabled = isDisabled;
+                fieldPrevPageButton.classList.toggle('is-disabled', isDisabled);
+            }
+
+            if (fieldNextPageButton) {
+                const isDisabled = currentFieldPage >= totalPages;
+                fieldNextPageButton.disabled = isDisabled;
+                fieldNextPageButton.classList.toggle('is-disabled', isDisabled);
+            }
+        }
+
         function bindFieldEvents(fieldItem) {
             const removeButton = fieldItem.querySelector('[data-remove-field]');
             const typeSelect = fieldItem.querySelector('[data-field-type]');
@@ -270,6 +382,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                     }
 
                     fieldItem.remove();
+                    updateFieldPagination();
                 });
             }
 
@@ -294,8 +407,169 @@ require dirname(__DIR__) . '/layouts/header.php';
                 }
 
                 fieldList.appendChild(fragment);
+                currentFieldPage = Math.ceil(getFieldItems().length / fieldPageSize);
+                updateFieldPagination();
             });
         }
+
+        if (fieldPrevPageButton) {
+            fieldPrevPageButton.addEventListener('click', function () {
+                if (currentFieldPage <= 1) {
+                    return;
+                }
+
+                currentFieldPage -= 1;
+                updateFieldPagination();
+            });
+        }
+
+        if (fieldNextPageButton) {
+            fieldNextPageButton.addEventListener('click', function () {
+                const totalPages = Math.max(1, Math.ceil(getFieldItems().length / fieldPageSize));
+
+                if (currentFieldPage >= totalPages) {
+                    return;
+                }
+
+                currentFieldPage += 1;
+                updateFieldPagination();
+            });
+        }
+
+        updateFieldPagination();
+
+        function renderTabFields(fields) {
+            if (!tabEditFields) {
+                return;
+            }
+
+            tabEditFields.innerHTML = '';
+
+            if (!Array.isArray(fields) || fields.length === 0) {
+                const emptyState = document.createElement('p');
+                emptyState.className = 'form-builder-edit-modal__empty';
+                emptyState.textContent = 'Nenhum campo cadastrado nesta aba.';
+                tabEditFields.appendChild(emptyState);
+                return;
+            }
+
+            function createFieldLabel(text, inputElement, extraClassName) {
+                const wrapper = document.createElement('label');
+                wrapper.textContent = text;
+
+                if (extraClassName) {
+                    wrapper.className = extraClassName;
+                }
+
+                wrapper.appendChild(inputElement);
+                return wrapper;
+            }
+
+            fields.forEach(function (field, index) {
+                const fieldItem = document.createElement('article');
+                fieldItem.className = 'form-builder-edit-modal__field';
+                const labelInput = document.createElement('input');
+                labelInput.type = 'text';
+                labelInput.value = String(field.label || '');
+
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = String(field.name || '');
+
+                const typeSelect = document.createElement('select');
+                [
+                    ['text', 'Texto'],
+                    ['email', 'Email'],
+                    ['number', 'Numero'],
+                    ['date', 'Data'],
+                    ['textarea', 'Texto longo'],
+                    ['select', 'Selecao'],
+                ].forEach(function (typeOption) {
+                    const option = document.createElement('option');
+                    option.value = typeOption[0];
+                    option.textContent = typeOption[1];
+                    typeSelect.appendChild(option);
+                });
+                typeSelect.value = String(field.type || 'text');
+
+                const placeholderInput = document.createElement('input');
+                placeholderInput.type = 'text';
+                placeholderInput.value = String(field.placeholder || '');
+
+                const optionsInput = document.createElement('input');
+                optionsInput.type = 'text';
+                optionsInput.value = String(Array.isArray(field.options) ? field.options.join(', ') : '');
+
+                const optionsClassName = 'form-builder-edit-modal__options' + (typeSelect.value === 'select' ? '' : ' is-hidden');
+                const optionsWrapper = createFieldLabel('Opções (separadas por vírgula)', optionsInput, optionsClassName);
+
+                fieldItem.appendChild(createFieldLabel('Rótulo', labelInput));
+                fieldItem.appendChild(createFieldLabel('Identificador', nameInput));
+                fieldItem.appendChild(createFieldLabel('Tipo', typeSelect));
+                fieldItem.appendChild(createFieldLabel('Placeholder', placeholderInput));
+                fieldItem.appendChild(optionsWrapper);
+
+                if (typeSelect) {
+                    typeSelect.addEventListener('change', function () {
+                        if (!optionsWrapper) {
+                            return;
+                        }
+
+                        optionsWrapper.classList.toggle('is-hidden', typeSelect.value !== 'select');
+                    });
+                }
+
+                fieldItem.setAttribute('data-field-index', String(index));
+                tabEditFields.appendChild(fieldItem);
+            });
+        }
+
+        function closeTabEditModal() {
+            if (!tabEditModal) {
+                return;
+            }
+
+            tabEditModal.hidden = true;
+        }
+
+        function openTabEditModal(tabData) {
+            if (!tabEditModal) {
+                return;
+            }
+
+            if (tabEditName) {
+                tabEditName.value = String((tabData && tabData.name) || '');
+            }
+
+            renderTabFields(tabData && tabData.fields ? tabData.fields : []);
+            tabEditModal.hidden = false;
+        }
+
+        tabEditButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const payload = button.getAttribute('data-tab');
+
+                if (!payload) {
+                    return;
+                }
+
+                try {
+                    openTabEditModal(JSON.parse(payload));
+                } catch (error) {
+                    openTabEditModal({ name: '', fields: [] });
+                }
+            });
+        });
+
+        tabEditCloseButtons.forEach(function (button) {
+            button.addEventListener('click', closeTabEditModal);
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && tabEditModal && tabEditModal.hidden === false) {
+                closeTabEditModal();
+            }
+        });
     }());
 </script>
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>
