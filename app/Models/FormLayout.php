@@ -117,7 +117,7 @@ final class FormLayout
 
     public function deactivateTab(string $tabIdentifier): bool
     {
-        $normalizedIdentifier = trim(mb_strtolower($tabIdentifier, 'UTF-8'));
+        $normalizedIdentifier = trim($this->toLower($tabIdentifier));
 
         if ($normalizedIdentifier === '') {
             return false;
@@ -165,11 +165,18 @@ final class FormLayout
 
     private function slugify(string $value): string
     {
-        $value = trim(mb_strtolower($value, 'UTF-8'));
+        $value = trim($this->toLower($value));
         $value = preg_replace('/[^a-z0-9]+/u', '-', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value) ?: $value) ?? '';
         $value = trim($value, '-');
 
         return $value !== '' ? $value : 'aba-customizada';
+    }
+
+    private function toLower(string $value): string
+    {
+        return function_exists('mb_strtolower')
+            ? mb_strtolower($value, 'UTF-8')
+            : strtolower($value);
     }
 
     /**

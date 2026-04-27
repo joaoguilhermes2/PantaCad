@@ -611,11 +611,18 @@ final class AuthController
 
     private function sanitizeFieldName(string $value): string
     {
-        $normalized = trim(mb_strtolower($value, 'UTF-8'));
+        $normalized = trim($this->toLower($value));
         $normalized = preg_replace('/[^a-z0-9_]+/u', '_', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $normalized) ?: $normalized) ?? '';
         $normalized = trim($normalized, '_');
 
         return $normalized !== '' ? $normalized : 'campo_customizado';
+    }
+
+    private function toLower(string $value): string
+    {
+        return function_exists('mb_strtolower')
+            ? mb_strtolower($value, 'UTF-8')
+            : strtolower($value);
     }
 
     private function storeProfilePhoto(mixed $file): ?string

@@ -1,3 +1,3 @@
-<script src="JS/notifications.js"></script>
+<script src="JS/notification.js"></script>
 </body>
 </html>

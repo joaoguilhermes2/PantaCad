@@ -144,7 +144,13 @@ require dirname(__DIR__) . '/layouts/header.php';
                                 </thead>
                                 <tbody>
                                     <?php foreach ($accessList as $item): ?>
-                                        <tr class="access-row" data-search="<?= htmlspecialchars(mb_strtolower(trim((string) $item['nome'] . ' ' . (string) $item['email'] . ' ' . (string) ($item['nivel_acesso'] ?? '') . ' ' . (!empty($item['ativo']) ? 'ativo' : 'inativo')), 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
+                                        <?php
+                                        $searchValue = trim((string) $item['nome'] . ' ' . (string) $item['email'] . ' ' . (string) ($item['nivel_acesso'] ?? '') . ' ' . (!empty($item['ativo']) ? 'ativo' : 'inativo'));
+                                        $searchValue = function_exists('mb_strtolower')
+                                            ? mb_strtolower($searchValue, 'UTF-8')
+                                            : strtolower($searchValue);
+                                        ?>
+                                        <tr class="access-row" data-search="<?= htmlspecialchars($searchValue, ENT_QUOTES, 'UTF-8'); ?>">
                                             <td><?= htmlspecialchars((string) $item['nome'], ENT_QUOTES, 'UTF-8'); ?></td>
                                             <td><?= htmlspecialchars((string) $item['email'], ENT_QUOTES, 'UTF-8'); ?></td>
                                             <td>
