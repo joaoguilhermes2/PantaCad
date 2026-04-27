@@ -45,6 +45,11 @@ if ($requestMethod === 'POST' && $action === 'store_form_layout') {
     return;
 }
 
+if ($requestMethod === 'POST' && $action === 'delete_form_layout') {
+    $controller->deleteFormLayout();
+    return;
+}
+
 match ($action) {
     'accesses' => $controller->accesses(),
     'users' => $controller->users(),

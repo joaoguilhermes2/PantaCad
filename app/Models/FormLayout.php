@@ -115,6 +115,26 @@ final class FormLayout
         }
     }
 
+    public function deactivateTab(string $tabIdentifier): bool
+    {
+        $normalizedIdentifier = trim(mb_strtolower($tabIdentifier, 'UTF-8'));
+
+        if ($normalizedIdentifier === '') {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE formularios_layout
+             SET ativo = FALSE
+             WHERE LOWER(identificador_aba) = LOWER(:identificador_aba)
+               AND ativo = TRUE'
+        );
+
+        $stmt->execute(['identificador_aba' => $normalizedIdentifier]);
+
+        return $stmt->rowCount() > 0;
+    }
+
     private function buildUniqueIdentifier(string $name): string
     {
         $base = $this->slugify($name);

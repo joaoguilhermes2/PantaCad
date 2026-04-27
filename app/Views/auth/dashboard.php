@@ -80,7 +80,10 @@ require dirname(__DIR__) . '/layouts/header.php';
             </div>
 
             <?php if (($successMessage ?? '') !== ''): ?>
-                <div class="success"><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+                <div class="app-notification app-notification--success" role="status" aria-live="polite" data-notification>
+                    <span><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></span>
+                    <button type="button" class="app-notification__close" aria-label="Fechar notificação" data-dismiss-notification>×</button>
+                </div>
             <?php endif; ?>
         </section>
     </section>

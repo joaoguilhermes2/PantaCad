@@ -92,7 +92,10 @@ require dirname(__DIR__) . '/layouts/header.php';
                 <?php endif; ?>
 
                 <?php if (($successMessage ?? '') !== ''): ?>
-                    <div class="success"><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+                    <div class="app-notification app-notification--success" role="status" aria-live="polite" data-notification>
+                        <span><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></span>
+                        <button type="button" class="app-notification__close" aria-label="Fechar notificação" data-dismiss-notification>×</button>
+                    </div>
                 <?php endif; ?>
 
                 <article class="form-builder-card">
@@ -185,7 +188,13 @@ require dirname(__DIR__) . '/layouts/header.php';
                                                 <path d="M6 3h8l4 4v4h-2V8h-3V5H6v14h6v2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm11.71 9.04a1 1 0 0 1 1.41 0l.84.84a1 1 0 0 1 0 1.41l-4.92 4.92L12 20l.79-3.04 4.92-4.92z"/>
                                             </svg>
                                         </button>
-                                        <button type="button" class="form-builder-tab-action form-builder-tab-action--delete" aria-label="Excluir aba <?= htmlspecialchars((string) ($tab['name'] ?? 'Aba'), ENT_QUOTES, 'UTF-8'); ?>">
+                                        <button
+                                            type="button"
+                                            class="form-builder-tab-action form-builder-tab-action--delete"
+                                            aria-label="Excluir aba <?= htmlspecialchars((string) ($tab['name'] ?? 'Aba'), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-open-tab-delete
+                                            data-tab-id="<?= htmlspecialchars((string) ($tab['id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                        >
                                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                                 <path d="M18.3 7.11 16.89 5.7 12 10.59 7.11 5.7 5.7 7.11 10.59 12 5.7 16.89l1.41 1.41L12 13.41l4.89 4.89 1.41-1.41L13.41 12z"/>
                                             </svg>
@@ -225,6 +234,27 @@ require dirname(__DIR__) . '/layouts/header.php';
 
         <div class="access-modal__actions">
             <button type="button" class="access-modal__button access-modal__button--secondary" data-close-tab-edit>Fechar</button>
+        </div>
+    </div>
+</div>
+
+<div class="access-modal form-builder-delete-modal" id="form-builder-delete-modal" role="dialog" aria-modal="true" aria-labelledby="form-builder-delete-title" hidden>
+    <div class="access-modal__backdrop" data-close-tab-delete></div>
+    <div class="access-modal__dialog">
+        <button type="button" class="access-modal__close" data-close-tab-delete aria-label="Fechar modal de exclusao da aba">x</button>
+
+        <div class="access-modal__header access-modal__header--success">
+            <h2 id="form-builder-delete-title">Confirmação de exclusão</h2>
+            <p>Deseja realmente excluir essa aba do formulário?</p>
+        </div>
+
+        <form method="post" action="index.php?action=delete_form_layout" id="form-builder-delete-form">
+            <input type="hidden" name="tab_identifier" id="form-builder-delete-tab-identifier" value="">
+        </form>
+
+        <div class="access-modal__actions access-modal__actions--split">
+            <button type="button" class="access-modal__button access-modal__button--secondary" data-close-tab-delete>Cancelar</button>
+            <button type="submit" form="form-builder-delete-form" class="access-modal__button access-modal__button--danger">Excluir aba</button>
         </div>
     </div>
 </div>
@@ -286,6 +316,10 @@ require dirname(__DIR__) . '/layouts/header.php';
         const tabEditName = document.getElementById('form-builder-edit-tab-name');
         const tabEditButtons = Array.from(document.querySelectorAll('[data-open-tab-edit]'));
         const tabEditCloseButtons = Array.from(document.querySelectorAll('[data-close-tab-edit]'));
+        const tabDeleteModal = document.getElementById('form-builder-delete-modal');
+        const tabDeleteButtons = Array.from(document.querySelectorAll('[data-open-tab-delete]'));
+        const tabDeleteCloseButtons = Array.from(document.querySelectorAll('[data-close-tab-delete]'));
+        const tabDeleteTabIdentifier = document.getElementById('form-builder-delete-tab-identifier');
 
         if (toggle) {
             toggle.setAttribute('aria-expanded', String(!body.classList.contains('dashboard-menu-collapsed')));
@@ -545,6 +579,23 @@ require dirname(__DIR__) . '/layouts/header.php';
             tabEditModal.hidden = false;
         }
 
+        function closeTabDeleteModal() {
+            if (!tabDeleteModal) {
+                return;
+            }
+
+            tabDeleteModal.hidden = true;
+        }
+
+        function openTabDeleteModal(tabIdentifier) {
+            if (!tabDeleteModal || !tabDeleteTabIdentifier) {
+                return;
+            }
+
+            tabDeleteTabIdentifier.value = tabIdentifier;
+            tabDeleteModal.hidden = false;
+        }
+
         tabEditButtons.forEach(function (button) {
             button.addEventListener('click', function () {
                 const payload = button.getAttribute('data-tab');
@@ -565,9 +616,29 @@ require dirname(__DIR__) . '/layouts/header.php';
             button.addEventListener('click', closeTabEditModal);
         });
 
+        tabDeleteButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const tabIdentifier = button.getAttribute('data-tab-id') || '';
+
+                if (tabIdentifier === '') {
+                    return;
+                }
+
+                openTabDeleteModal(tabIdentifier);
+            });
+        });
+
+        tabDeleteCloseButtons.forEach(function (button) {
+            button.addEventListener('click', closeTabDeleteModal);
+        });
+
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && tabEditModal && tabEditModal.hidden === false) {
                 closeTabEditModal();
+            }
+
+            if (event.key === 'Escape' && tabDeleteModal && tabDeleteModal.hidden === false) {
+                closeTabDeleteModal();
             }
         });
     }());

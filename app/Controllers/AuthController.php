@@ -286,6 +286,34 @@ final class AuthController
         }
     }
 
+    public function deleteFormLayout(): void
+    {
+        $this->ensureAuthenticated();
+
+        $tabIdentifier = trim((string) ($_POST['tab_identifier'] ?? ''));
+
+        if ($tabIdentifier === '') {
+            flash('form_builder_error', 'Nao foi possivel identificar a aba para exclusao.');
+            redirect('index.php?action=form_builder');
+        }
+
+        try {
+            $formLayoutModel = new FormLayout(database());
+            $wasRemoved = $formLayoutModel->deactivateTab($tabIdentifier);
+
+            if ($wasRemoved) {
+                flash('form_builder_success', 'Aba excluida com sucesso.');
+            } else {
+                flash('form_builder_error', 'A aba selecionada nao foi encontrada ou ja estava excluida.');
+            }
+
+            redirect('index.php?action=form_builder');
+        } catch (Throwable $exception) {
+            flash('form_builder_error', 'Nao foi possivel excluir a aba: ' . $exception->getMessage());
+            redirect('index.php?action=form_builder');
+        }
+    }
+
     public function accesses(): void
     {
         $this->ensureAuthenticated();

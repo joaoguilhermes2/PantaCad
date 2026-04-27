@@ -4,7 +4,7 @@ $title = 'PantaCad | Acessos';
 $bodyClass = 'dashboard-page dashboard-page--accesses';
 $isEditing = is_array($editAccess ?? null);
 $isCreating = (bool) ($createModalOpen ?? false) && !$isEditing;
-$hasSuccessModal = ($successMessage ?? '') !== '';
+$hasSuccessNotification = ($successMessage ?? '') !== '';
 $currentPage = max(1, (int) ($currentPage ?? 1));
 $totalPages = max(1, (int) ($totalPages ?? 1));
 $pageQuery = '&page=' . $currentPage;
@@ -102,6 +102,13 @@ require dirname(__DIR__) . '/layouts/header.php';
 
                 <?php if (($errorMessage ?? '') !== ''): ?>
                     <div class="error"><?= htmlspecialchars((string) $errorMessage, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+
+                <?php if ($hasSuccessNotification): ?>
+                    <div class="app-notification app-notification--success" role="status" aria-live="polite" data-notification>
+                        <span><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></span>
+                        <button type="button" class="app-notification__close" aria-label="Fechar notificação" data-dismiss-notification>×</button>
+                    </div>
                 <?php endif; ?>
 
                 <section class="access-grid">
@@ -313,26 +320,6 @@ require dirname(__DIR__) . '/layouts/header.php';
                     <button type="submit" class="access-form__submit">Salvar alteracoes</button>
                 </div>
             </form>
-        </div>
-    </div>
-<?php endif; ?>
-<?php if ($hasSuccessModal): ?>
-    <div class="access-modal access-modal--success is-open" id="access-success-modal" role="dialog" aria-modal="true" aria-labelledby="access-success-title">
-        <div class="access-modal__backdrop"></div>
-        <div class="access-modal__dialog">
-            <div class="access-modal__header access-modal__header--success access-modal__header--success-modern">
-                <span class="access-modal__icon access-modal__icon--success" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                        <path d="M9.55 16.6 5.4 12.45l1.4-1.4 2.75 2.75 7-7 1.4 1.4-8.4 8.4z"/>
-                    </svg>
-                </span>
-                <h2 id="access-success-title">Operação concluída</h2>
-                <p><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></p>
-            </div>
-
-            <div class="access-modal__actions">
-                <a class="access-modal__button access-modal__button--success" href="index.php?action=accesses&page=<?= $currentPage; ?>">Fechar</a>
-            </div>
         </div>
     </div>
 <?php endif; ?>
