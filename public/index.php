@@ -20,6 +20,11 @@ if ($requestMethod === 'POST' && $action === 'update_first_access_password') {
     return;
 }
 
+if ($requestMethod === 'POST' && $action === 'request_password_reset') {
+    $controller->requestPasswordReset();
+    return;
+}
+
 if ($requestMethod === 'POST' && $action === 'update_profile') {
     $controller->updateProfile();
     return;
@@ -54,6 +59,7 @@ match ($action) {
     'accesses' => $controller->accesses(),
     'users' => $controller->users(),
     'first_access' => $controller->firstAccess(),
+    'forgot_password' => $controller->forgotPassword(),
     'profile' => $controller->profile(),
     'logout' => $controller->logout(),
     'dashboard' => $controller->dashboard(),

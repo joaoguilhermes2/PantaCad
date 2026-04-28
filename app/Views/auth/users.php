@@ -2,117 +2,7 @@
 
 $title = 'PantaCad | Usuarios';
 $bodyClass = 'dashboard-page';
-$defaultTabs = [
-    [
-        'id' => 'dados-pessoais',
-        'name' => 'Dados Pessoais',
-        'fields' => [
-            [
-                'name' => 'nome',
-                'label' => 'Nome completo',
-                'type' => 'text',
-                'placeholder' => 'Digite o nome completo',
-                'options' => [],
-            ],
-            [
-                'name' => 'cpf',
-                'label' => 'CPF',
-                'type' => 'text',
-                'placeholder' => '000.000.000-00',
-                'options' => [],
-            ],
-            [
-                'name' => 'data_nascimento',
-                'label' => 'Data de nascimento',
-                'type' => 'date',
-                'placeholder' => '',
-                'options' => [],
-            ],
-            [
-                'name' => 'genero',
-                'label' => 'Genero',
-                'type' => 'select',
-                'placeholder' => '',
-                'options' => ['Feminino', 'Masculino', 'Outro'],
-            ],
-        ],
-    ],
-    [
-        'id' => 'contato',
-        'name' => 'Contato',
-        'fields' => [
-            [
-                'name' => 'email',
-                'label' => 'Email',
-                'type' => 'email',
-                'placeholder' => 'nome@empresa.com',
-                'options' => [],
-            ],
-            [
-                'name' => 'telefone',
-                'label' => 'Telefone',
-                'type' => 'text',
-                'placeholder' => '(00) 00000-0000',
-                'options' => [],
-            ],
-            [
-                'name' => 'celular',
-                'label' => 'Celular',
-                'type' => 'text',
-                'placeholder' => '(00) 00000-0000',
-                'options' => [],
-            ],
-        ],
-    ],
-    [
-        'id' => 'endereco',
-        'name' => 'Endereco',
-        'fields' => [
-            [
-                'name' => 'cep',
-                'label' => 'CEP',
-                'type' => 'text',
-                'placeholder' => '00000-000',
-                'options' => [],
-            ],
-            [
-                'name' => 'logradouro',
-                'label' => 'Logradouro',
-                'type' => 'text',
-                'placeholder' => 'Rua, avenida, etc.',
-                'options' => [],
-            ],
-            [
-                'name' => 'numero',
-                'label' => 'Numero',
-                'type' => 'text',
-                'placeholder' => 'Ex.: 120',
-                'options' => [],
-            ],
-            [
-                'name' => 'bairro',
-                'label' => 'Bairro',
-                'type' => 'text',
-                'placeholder' => 'Bairro',
-                'options' => [],
-            ],
-            [
-                'name' => 'cidade',
-                'label' => 'Cidade',
-                'type' => 'text',
-                'placeholder' => 'Cidade',
-                'options' => [],
-            ],
-            [
-                'name' => 'uf',
-                'label' => 'UF',
-                'type' => 'text',
-                'placeholder' => 'MS',
-                'options' => [],
-            ],
-        ],
-    ],
-];
+$defaultTabs = [];
 $tabs = array_merge($defaultTabs, is_array($customTabs ?? null) ? $customTabs : []);
 $firstTabId = (string) (($tabs[0]['id'] ?? 'dados-pessoais'));
 require dirname(__DIR__) . '/layouts/header.php';
@@ -191,6 +81,15 @@ require dirname(__DIR__) . '/layouts/header.php';
                 <div class="users-page__intro">
                     <h1>Cadastro de usuarios</h1>
                     <p>Preencha os dados do usuario por abas para organizar o cadastro.</p>
+                    <div class="users-page__subgroups" aria-label="Subgrupos do usuario logado">
+                        <?php if (($usuarioSubgrupos ?? []) !== []): ?>
+                            <?php foreach ($usuarioSubgrupos as $subgrupo): ?>
+                                <span><?= htmlspecialchars((string) ($subgrupo['nome'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <span>Sem subgrupo vinculado</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <article class="users-card">
@@ -213,19 +112,69 @@ require dirname(__DIR__) . '/layouts/header.php';
                             <section class="users-tab-panel <?= $tabIndex === 0 ? 'is-active' : ''; ?>" data-user-panel="<?= htmlspecialchars((string) $tab['id'], ENT_QUOTES, 'UTF-8'); ?>" role="tabpanel" <?= $tabIndex === 0 ? '' : 'hidden'; ?>>
                                 <fieldset class="users-section">
                                     <legend><?= htmlspecialchars((string) $tab['name'], ENT_QUOTES, 'UTF-8'); ?></legend>
-                                    <div class="users-form__grid <?= (string) $tab['id'] === 'endereco' ? 'users-form__grid--address' : ''; ?>">
+                                    <div class="users-form__grid <?= (string) $tab['id'] === 'endereco' ? 'users-form__grid--address' : ''; ?> <?= in_array((string) $tab['id'], ['dados-gerais', 'dados-cobranca', 'enderecos-entrega'], true) ? 'users-form__grid--general' : ''; ?>">
                                         <?php foreach (($tab['fields'] ?? []) as $field): ?>
-                                            <label for="usuario-<?= htmlspecialchars((string) $tab['id'] . '-' . (string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>" class="<?= (string) ($field['name'] ?? '') === 'logradouro' ? 'users-form__field--wide' : ''; ?>">
+                                            <?php
+                                            $fieldName = (string) ($field['name'] ?? 'campo');
+                                            $fieldId = 'usuario-' . (string) $tab['id'] . '-' . $fieldName;
+                                            $fieldType = (string) ($field['type'] ?? 'text');
+                                            $fieldWide = isset($field['wide']) ? max(1, min(4, (int) $field['wide'])) : 0;
+                                            $fieldClasses = [];
+
+                                            if ($fieldName === 'logradouro') {
+                                                $fieldClasses[] = 'users-form__field--wide';
+                                            }
+
+                                            if ($fieldWide > 0) {
+                                                $fieldClasses[] = 'users-form__field--span-' . $fieldWide;
+                                            }
+                                            ?>
+                                            <?php if ($fieldType === 'radio' || $fieldType === 'checkbox_group'): ?>
+                                                <fieldset class="users-form__choice-group <?= htmlspecialchars(implode(' ', $fieldClasses), ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <legend><?= htmlspecialchars((string) ($field['label'] ?? 'Campo'), ENT_QUOTES, 'UTF-8'); ?></legend>
+                                                    <div class="users-form__choices">
+                                                        <?php foreach (($field['options'] ?? []) as $optionIndex => $option): ?>
+                                                            <?php
+                                                            $optionValue = (string) $option;
+                                                            $optionId = $fieldId . '-' . $optionIndex;
+                                                            $isChecked = $fieldType === 'radio'
+                                                                ? (string) ($field['default'] ?? '') === $optionValue
+                                                                : in_array($optionValue, array_map('strval', is_array($field['default'] ?? null) ? $field['default'] : []), true);
+                                                            ?>
+                                                            <label class="users-form__choice" for="<?= htmlspecialchars($optionId, ENT_QUOTES, 'UTF-8'); ?>">
+                                                                <input
+                                                                    id="<?= htmlspecialchars($optionId, ENT_QUOTES, 'UTF-8'); ?>"
+                                                                    name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?><?= $fieldType === 'checkbox_group' ? '[]' : ''; ?>"
+                                                                    type="<?= $fieldType === 'radio' ? 'radio' : 'checkbox'; ?>"
+                                                                    value="<?= htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8'); ?>"
+                                                                    <?= $isChecked ? 'checked' : ''; ?>
+                                                                >
+                                                                <span><?= htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8'); ?></span>
+                                                            </label>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </fieldset>
+                                            <?php elseif ($fieldType === 'checkbox'): ?>
+                                                <label for="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8'); ?>" class="users-form__check-field <?= htmlspecialchars(implode(' ', $fieldClasses), ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <input
+                                                        id="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        type="checkbox"
+                                                        value="1"
+                                                    >
+                                                    <span><?= htmlspecialchars((string) ($field['label'] ?? 'Campo'), ENT_QUOTES, 'UTF-8'); ?></span>
+                                                </label>
+                                            <?php else: ?>
+                                            <label for="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8'); ?>" class="<?= htmlspecialchars(implode(' ', $fieldClasses), ENT_QUOTES, 'UTF-8'); ?>">
                                                 <?= htmlspecialchars((string) ($field['label'] ?? 'Campo'), ENT_QUOTES, 'UTF-8'); ?>
-                                                <?php $fieldType = (string) ($field['type'] ?? 'text'); ?>
                                                 <?php if ($fieldType === 'textarea'): ?>
                                                     <textarea
-                                                        id="usuario-<?= htmlspecialchars((string) $tab['id'] . '-' . (string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>"
-                                                        name="<?= htmlspecialchars((string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        id="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?>"
                                                         placeholder="<?= htmlspecialchars((string) ($field['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                     ></textarea>
                                                 <?php elseif ($fieldType === 'select'): ?>
-                                                    <select id="usuario-<?= htmlspecialchars((string) $tab['id'] . '-' . (string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>" name="<?= htmlspecialchars((string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <select id="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8'); ?>" name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?>">
                                                         <option value="">Selecione</option>
                                                         <?php foreach (($field['options'] ?? []) as $option): ?>
                                                             <option value="<?= htmlspecialchars((string) $option, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars((string) $option, ENT_QUOTES, 'UTF-8'); ?></option>
@@ -233,14 +182,15 @@ require dirname(__DIR__) . '/layouts/header.php';
                                                     </select>
                                                 <?php else: ?>
                                                     <input
-                                                        id="usuario-<?= htmlspecialchars((string) $tab['id'] . '-' . (string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>"
-                                                        name="<?= htmlspecialchars((string) ($field['name'] ?? 'campo'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        id="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?>"
                                                         type="<?= htmlspecialchars($fieldType, ENT_QUOTES, 'UTF-8'); ?>"
                                                         placeholder="<?= htmlspecialchars((string) ($field['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                                        <?= (string) ($field['name'] ?? '') === 'uf' ? 'maxlength="2"' : ''; ?>
+                                                        <?= $fieldName === 'uf' ? 'maxlength="2"' : ''; ?>
                                                     >
                                                 <?php endif; ?>
                                             </label>
+                                            <?php endif; ?>
                                         <?php endforeach; ?>
                                     </div>
                                 </fieldset>

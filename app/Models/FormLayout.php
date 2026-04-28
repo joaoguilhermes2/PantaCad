@@ -209,7 +209,7 @@ final class FormLayout
             }
 
             $type = trim((string) ($field['type'] ?? 'text'));
-            $allowedTypes = ['text', 'email', 'number', 'date', 'textarea', 'select'];
+            $allowedTypes = ['text', 'email', 'number', 'date', 'textarea', 'select', 'radio', 'checkbox', 'checkbox_group'];
 
             if (!in_array($type, $allowedTypes, true)) {
                 $type = 'text';
@@ -220,7 +220,7 @@ final class FormLayout
                 'label' => $label,
                 'type' => $type,
                 'placeholder' => trim((string) ($field['placeholder'] ?? '')),
-                'options' => $type === 'select' ? $options : [],
+                'options' => in_array($type, ['select', 'radio', 'checkbox_group'], true) ? $options : [],
             ];
         }
 
@@ -241,7 +241,7 @@ final class FormLayout
         }
 
         $type = trim((string) ($row['tipo'] ?? 'text'));
-        $allowedTypes = ['text', 'email', 'number', 'date', 'textarea', 'select'];
+        $allowedTypes = ['text', 'email', 'number', 'date', 'textarea', 'select', 'radio', 'checkbox', 'checkbox_group'];
 
         if (!in_array($type, $allowedTypes, true)) {
             $type = 'text';
@@ -252,7 +252,7 @@ final class FormLayout
             'label' => trim((string) ($row['rotulo'] ?? '')),
             'type' => $type,
             'placeholder' => trim((string) ($row['placeholder'] ?? '')),
-            'options' => $type === 'select'
+            'options' => in_array($type, ['select', 'radio', 'checkbox_group'], true)
                 ? array_values(array_filter(
                     array_map(static fn (mixed $option): string => trim((string) $option), $options),
                     static fn (string $option): bool => $option !== ''

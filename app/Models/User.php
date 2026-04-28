@@ -53,6 +53,22 @@ final class User
         ]);
     }
 
+    public function findActiveByEmail(string $email): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, nome, email
+             FROM usuarios
+             WHERE LOWER(email) = LOWER(:email)
+               AND ativo = TRUE
+             LIMIT 1'
+        );
+
+        $stmt->execute(['email' => $email]);
+        $usuario = $stmt->fetch();
+
+        return $usuario === false ? null : $usuario;
+    }
+
     public function findById(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
@@ -72,7 +88,13 @@ final class User
         $stmt->execute(['id' => $id]);
         $usuario = $stmt->fetch();
 
-        return $usuario === false ? null : $usuario;
+        if ($usuario === false) {
+            return null;
+        }
+
+        $usuario['subgrupo_acesso_ids'] = $this->listUserAccessSubgroupIds($id);
+
+        return $usuario;
     }
 
     public function updateProfile(int $id, string $nome, string $email, ?string $fotoPerfil = null): void
@@ -126,11 +148,15 @@ final class User
                     u.email,
                     u.nivel_acesso_id,
                     na.nome AS nivel_acesso,
+                    COALESCE(STRING_AGG(sa.nome, \', \' ORDER BY sa.nome) FILTER (WHERE sa.id IS NOT NULL), \'\') AS subgrupos_acesso,
                     u.ativo,
                     u.foto_perfil,
                     u.created_at
              FROM usuarios u
              LEFT JOIN niveis_acesso na ON na.id = u.nivel_acesso_id
+             LEFT JOIN usuarios_subgrupos_acesso usa ON usa.usuario_id = u.id
+             LEFT JOIN subgrupos_acesso sa ON sa.id = usa.subgrupo_acesso_id
+             GROUP BY u.id, na.nome
              ORDER BY u.nome ASC
              LIMIT :limit OFFSET :offset'
         );
@@ -154,6 +180,34 @@ final class User
         return $stmt->fetchAll() ?: [];
     }
 
+    public function listAccessSubgroups(): array
+    {
+        $stmt = $this->pdo->query(
+            'SELECT id, nome
+             FROM subgrupos_acesso
+             WHERE ativo = TRUE
+             ORDER BY nome ASC'
+        );
+
+        return $stmt->fetchAll() ?: [];
+    }
+
+    public function listUserAccessSubgroups(int $usuarioId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT sa.id, sa.nome
+             FROM usuarios_subgrupos_acesso usa
+             INNER JOIN subgrupos_acesso sa ON sa.id = usa.subgrupo_acesso_id
+             WHERE usa.usuario_id = :usuario_id
+               AND sa.ativo = TRUE
+             ORDER BY sa.nome ASC'
+        );
+
+        $stmt->execute(['usuario_id' => $usuarioId]);
+
+        return $stmt->fetchAll() ?: [];
+    }
+
     public function accessLevelExists(int $id): bool
     {
         $stmt = $this->pdo->prepare(
@@ -167,6 +221,27 @@ final class User
         $stmt->execute(['id' => $id]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    public function accessSubgroupsExist(array $ids): bool
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+
+        if ($ids === []) {
+            return false;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*)
+             FROM subgrupos_acesso
+             WHERE ativo = TRUE
+               AND id IN ($placeholders)"
+        );
+
+        $stmt->execute($ids);
+
+        return (int) $stmt->fetchColumn() === count($ids);
     }
 
     public function emailExists(string $email): bool
@@ -183,45 +258,69 @@ final class User
         return $stmt->fetchColumn() !== false;
     }
 
-    public function createAccess(string $nome, string $email, int $nivelAcessoId, bool $ativo = true): void
+    public function createAccess(string $nome, string $email, int $nivelAcessoId, array $subgrupoAcessoIds, bool $ativo = true): void
     {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO usuarios (nome, email, senha_hash, nivel_acesso_id, ativo)
-             VALUES (
-                :nome,
-                :email,
-                crypt(\'123456\', gen_salt(\'bf\', 12)),
-                :nivel_acesso_id,
-                :ativo
-             )'
-        );
+        $this->pdo->beginTransaction();
 
-        $stmt->execute([
-            'nome' => $nome,
-            'email' => $email,
-            'nivel_acesso_id' => $nivelAcessoId,
-            'ativo' => $ativo,
-        ]);
+        try {
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO usuarios (nome, email, senha_hash, nivel_acesso_id, ativo)
+                 VALUES (
+                    :nome,
+                    :email,
+                    crypt(\'123456\', gen_salt(\'bf\', 12)),
+                    :nivel_acesso_id,
+                    :ativo
+                 )
+                 RETURNING id'
+            );
+
+            $stmt->execute([
+                'nome' => $nome,
+                'email' => $email,
+                'nivel_acesso_id' => $nivelAcessoId,
+                'ativo' => $ativo,
+            ]);
+
+            $usuarioId = (int) $stmt->fetchColumn();
+            $this->syncAccessSubgroups($usuarioId, $subgrupoAcessoIds);
+
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            $this->pdo->rollBack();
+            throw $exception;
+        }
     }
 
-    public function updateAccess(int $id, string $nome, string $email, int $nivelAcessoId, bool $ativo): void
+    public function updateAccess(int $id, string $nome, string $email, int $nivelAcessoId, array $subgrupoAcessoIds, bool $ativo): void
     {
-        $stmt = $this->pdo->prepare(
-            'UPDATE usuarios
-             SET nome = :nome,
-                 email = :email,
-                 nivel_acesso_id = :nivel_acesso_id,
-                 ativo = :ativo
-             WHERE id = :id'
-        );
+        $this->pdo->beginTransaction();
 
-        $stmt->execute([
-            'id' => $id,
-            'nome' => $nome,
-            'email' => $email,
-            'nivel_acesso_id' => $nivelAcessoId,
-            'ativo' => $ativo,
-        ]);
+        try {
+            $stmt = $this->pdo->prepare(
+                'UPDATE usuarios
+                 SET nome = :nome,
+                     email = :email,
+                     nivel_acesso_id = :nivel_acesso_id,
+                     ativo = :ativo
+                 WHERE id = :id'
+            );
+
+            $stmt->execute([
+                'id' => $id,
+                'nome' => $nome,
+                'email' => $email,
+                'nivel_acesso_id' => $nivelAcessoId,
+                'ativo' => $ativo,
+            ]);
+
+            $this->syncAccessSubgroups($id, $subgrupoAcessoIds);
+
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            $this->pdo->rollBack();
+            throw $exception;
+        }
     }
 
     public function deactivateAccess(int $id): void
@@ -233,6 +332,43 @@ final class User
         );
 
         $stmt->execute(['id' => $id]);
+    }
+
+    private function listUserAccessSubgroupIds(int $usuarioId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT subgrupo_acesso_id
+             FROM usuarios_subgrupos_acesso
+             WHERE usuario_id = :usuario_id'
+        );
+
+        $stmt->execute(['usuario_id' => $usuarioId]);
+
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+    }
+
+    private function syncAccessSubgroups(int $usuarioId, array $subgrupoAcessoIds): void
+    {
+        $subgrupoAcessoIds = array_values(array_unique(array_filter(array_map('intval', $subgrupoAcessoIds), static fn (int $id): bool => $id > 0)));
+
+        $deleteStmt = $this->pdo->prepare('DELETE FROM usuarios_subgrupos_acesso WHERE usuario_id = :usuario_id');
+        $deleteStmt->execute(['usuario_id' => $usuarioId]);
+
+        if ($subgrupoAcessoIds === []) {
+            return;
+        }
+
+        $insertStmt = $this->pdo->prepare(
+            'INSERT INTO usuarios_subgrupos_acesso (usuario_id, subgrupo_acesso_id)
+             VALUES (:usuario_id, :subgrupo_acesso_id)'
+        );
+
+        foreach ($subgrupoAcessoIds as $subgrupoAcessoId) {
+            $insertStmt->execute([
+                'usuario_id' => $usuarioId,
+                'subgrupo_acesso_id' => $subgrupoAcessoId,
+            ]);
+        }
     }
 }
 

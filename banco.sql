@@ -16,6 +16,14 @@ CREATE TABLE IF NOT EXISTS niveis_acesso (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS subgrupos_acesso (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL UNIQUE,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS usuarios (
     id BIGSERIAL PRIMARY KEY,
     nome VARCHAR(150) NOT NULL,
@@ -29,6 +37,17 @@ CREATE TABLE IF NOT EXISTS usuarios (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_usuarios_nivel_acesso
         FOREIGN KEY (nivel_acesso_id) REFERENCES niveis_acesso (id)
+);
+
+CREATE TABLE IF NOT EXISTS usuarios_subgrupos_acesso (
+    usuario_id BIGINT NOT NULL,
+    subgrupo_acesso_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (usuario_id, subgrupo_acesso_id),
+    CONSTRAINT fk_usuarios_subgrupos_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios (id) ON DELETE CASCADE,
+    CONSTRAINT fk_usuarios_subgrupos_subgrupo
+        FOREIGN KEY (subgrupo_acesso_id) REFERENCES subgrupos_acesso (id)
 );
 
 CREATE TABLE IF NOT EXISTS formularios_layout (
@@ -56,6 +75,13 @@ VALUES
     ('Dev')
 ON CONFLICT (nome) DO NOTHING;
 
+INSERT INTO subgrupos_acesso (nome)
+VALUES
+    ('Cliente'),
+    ('Fornecedor'),
+    ('Transpotador')
+ON CONFLICT (nome) DO NOTHING;
+
 CREATE UNIQUE INDEX IF NOT EXISTS ux_usuarios_email
     ON usuarios (LOWER(email));
 
@@ -66,6 +92,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_formularios_layout_identificador_aba
 
 CREATE TRIGGER trg_niveis_acesso_updated_at
 BEFORE UPDATE ON niveis_acesso
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_subgrupos_acesso_updated_at
+BEFORE UPDATE ON subgrupos_acesso
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
@@ -82,5 +113,6 @@ EXECUTE FUNCTION set_updated_at();
 /* Caso necessario, deletar
 
 DROP TRIGGER IF EXISTS trg_niveis_acesso_updated_at ON niveis_acesso;
+DROP TRIGGER IF EXISTS trg_subgrupos_acesso_updated_at ON subgrupos_acesso;
 DROP TRIGGER IF EXISTS trg_usuarios_updated_at ON usuarios;
 DROP TRIGGER IF EXISTS trg_formularios_layout_updated_at ON formularios_layout; */

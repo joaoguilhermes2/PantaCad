@@ -13,12 +13,30 @@ $nextPage = min($totalPages, $currentPage + 1);
 $nomeValue = (string) (($old['nome'] ?? '') !== '' ? $old['nome'] : '');
 $emailValue = (string) (($old['email'] ?? '') !== '' ? $old['email'] : '');
 $nivelAcessoIdValue = (int) (($old['nivel_acesso_id'] ?? 0) > 0 ? $old['nivel_acesso_id'] : 0);
+$subgrupoAcessoIdsValue = array_map('intval', is_array($old['subgrupo_acesso_ids'] ?? null) ? $old['subgrupo_acesso_ids'] : []);
+$subgrupoAcessoLabelValue = implode(', ', array_map(
+    static fn (array $subgrupo): string => (string) $subgrupo['nome'],
+    array_filter(
+        is_array($accessSubgroups ?? null) ? $accessSubgroups : [],
+        static fn (array $subgrupo): bool => in_array((int) $subgrupo['id'], $subgrupoAcessoIdsValue, true)
+    )
+));
 $ativoValue = !array_key_exists('ativo', $old ?? []) || (bool) $old['ativo'];
 $editNomeValue = (string) (($old['nome'] ?? '') !== '' ? $old['nome'] : (($editAccess['nome'] ?? '') !== '' ? $editAccess['nome'] : ''));
 $editEmailValue = (string) (($old['email'] ?? '') !== '' ? $old['email'] : (($editAccess['email'] ?? '') !== '' ? $editAccess['email'] : ''));
 $editNivelAcessoIdValue = (int) (($old['nivel_acesso_id'] ?? 0) > 0
     ? $old['nivel_acesso_id']
     : (($editAccess['nivel_acesso_id'] ?? 0) > 0 ? $editAccess['nivel_acesso_id'] : 0));
+$editSubgrupoAcessoIdsValue = array_map('intval', is_array($old['subgrupo_acesso_ids'] ?? null)
+    ? $old['subgrupo_acesso_ids']
+    : (is_array($editAccess['subgrupo_acesso_ids'] ?? null) ? $editAccess['subgrupo_acesso_ids'] : []));
+$editSubgrupoAcessoLabelValue = implode(', ', array_map(
+    static fn (array $subgrupo): string => (string) $subgrupo['nome'],
+    array_filter(
+        is_array($accessSubgroups ?? null) ? $accessSubgroups : [],
+        static fn (array $subgrupo): bool => in_array((int) $subgrupo['id'], $editSubgrupoAcessoIdsValue, true)
+    )
+));
 $editAtivoValue = array_key_exists('ativo', $old ?? [])
     ? (bool) $old['ativo']
     : ($isEditing ? !empty($editAccess['ativo']) : true);
@@ -120,7 +138,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                             </div>
                             <div class="access-card__toolbar">
                                 <label class="access-search" for="access-search-input" aria-label="Buscar acessos cadastrados">
-                                    <input id="access-search-input" type="search" placeholder="Buscar por nome, email, nível ou status">
+                                    <input id="access-search-input" type="search" placeholder="Buscar por nome, email, nivel, subgrupo ou status">
                                     <span class="access-search__button" aria-hidden="true">
                                         <svg viewBox="0 0 24 24" focusable="false">
                                             <path d="M10.5 3a7.5 7.5 0 1 1-5.3 12.8A7.5 7.5 0 0 1 10.5 3zm0 2a5.5 5.5 0 1 0 3.89 1.61A5.47 5.47 0 0 0 10.5 5zm6.65 10.74 3.56 3.55-1.42 1.42-3.55-3.56 1.41-1.41z"/>
@@ -138,6 +156,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                                         <th>Nome</th>
                                         <th>Email</th>
                                         <th>Nível de acesso</th>
+                                        <th>Subgrupos</th>
                                         <th>Status</th>
                                         <th>Ações</th>
                                     </tr>
@@ -145,7 +164,8 @@ require dirname(__DIR__) . '/layouts/header.php';
                                 <tbody>
                                     <?php foreach ($accessList as $item): ?>
                                         <?php
-                                        $searchValue = trim((string) $item['nome'] . ' ' . (string) $item['email'] . ' ' . (string) ($item['nivel_acesso'] ?? '') . ' ' . (!empty($item['ativo']) ? 'ativo' : 'inativo'));
+                                        $subgruposAcesso = trim((string) ($item['subgrupos_acesso'] ?? ''));
+                                        $searchValue = trim((string) $item['nome'] . ' ' . (string) $item['email'] . ' ' . (string) ($item['nivel_acesso'] ?? '') . ' ' . $subgruposAcesso . ' ' . (!empty($item['ativo']) ? 'ativo' : 'inativo'));
                                         $searchValue = function_exists('mb_strtolower')
                                             ? mb_strtolower($searchValue, 'UTF-8')
                                             : strtolower($searchValue);
@@ -155,6 +175,9 @@ require dirname(__DIR__) . '/layouts/header.php';
                                             <td><?= htmlspecialchars((string) $item['email'], ENT_QUOTES, 'UTF-8'); ?></td>
                                             <td>
                                                 <span class="access-level"><?= htmlspecialchars((string) ($item['nivel_acesso'] ?? 'Sem nivel'), ENT_QUOTES, 'UTF-8'); ?></span>
+                                            </td>
+                                            <td>
+                                                <span class="access-subgroups"><?= htmlspecialchars($subgruposAcesso !== '' ? $subgruposAcesso : 'Sem subgrupo', ENT_QUOTES, 'UTF-8'); ?></span>
                                             </td>
                                             <td>
                                                 <span class="access-status <?= !empty($item['ativo']) ? 'access-status--active' : 'access-status--inactive'; ?>">
@@ -189,11 +212,11 @@ require dirname(__DIR__) . '/layouts/header.php';
                                     <?php endforeach; ?>
                                     <?php if (($accessList ?? []) === []): ?>
                                         <tr>
-                                            <td colspan="5" class="access-table__empty">Nenhum acesso encontrado nesta pagina.</td>
+                                            <td colspan="6" class="access-table__empty">Nenhum acesso encontrado nesta pagina.</td>
                                         </tr>
                                     <?php endif; ?>
                                     <tr id="access-search-empty" hidden>
-                                        <td colspan="5" class="access-table__empty">Nenhum acesso corresponde Ã busca informada.</td>
+                                        <td colspan="6" class="access-table__empty">Nenhum acesso corresponde Ã busca informada.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -258,6 +281,22 @@ require dirname(__DIR__) . '/layouts/header.php';
                     </select>
                 </label>
 
+                <div class="access-form__multi" data-multi-select>
+                    <span class="access-form__multi-label">Selecione o(s) subgrupo(s)</span>
+                    <button type="button" class="access-form__select access-form__multi-button" aria-haspopup="listbox" aria-expanded="false" data-multi-toggle>
+                        <span data-multi-text><?= htmlspecialchars($subgrupoAcessoLabelValue !== '' ? $subgrupoAcessoLabelValue : 'Selecione', ENT_QUOTES, 'UTF-8'); ?></span>
+                    </button>
+                    <div class="access-form__multi-menu" role="listbox" aria-multiselectable="true" hidden>
+                        <?php foreach (($accessSubgroups ?? []) as $subgrupo): ?>
+                            <?php $isSubgroupSelected = in_array((int) $subgrupo['id'], $subgrupoAcessoIdsValue, true); ?>
+                            <label class="access-form__multi-option">
+                                <input type="checkbox" name="subgrupo_acesso_ids[]" value="<?= (int) $subgrupo['id']; ?>" data-multi-option <?= $isSubgroupSelected ? 'checked' : ''; ?>>
+                                <span><?= htmlspecialchars((string) $subgrupo['nome'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
                 <label class="access-form__check">
                     <input type="checkbox" name="ativo" value="1" <?= $ativoValue ? 'checked' : ''; ?>>
                     <span>Ativar acesso imediatamente</span>
@@ -312,6 +351,22 @@ require dirname(__DIR__) . '/layouts/header.php';
                     </select>
                 </label>
 
+                <div class="access-form__multi" data-multi-select>
+                    <span class="access-form__multi-label">Selecione o(s) subgrupo(s)</span>
+                    <button type="button" class="access-form__select access-form__multi-button" aria-haspopup="listbox" aria-expanded="false" data-multi-toggle>
+                        <span data-multi-text><?= htmlspecialchars($editSubgrupoAcessoLabelValue !== '' ? $editSubgrupoAcessoLabelValue : 'Selecione', ENT_QUOTES, 'UTF-8'); ?></span>
+                    </button>
+                    <div class="access-form__multi-menu" role="listbox" aria-multiselectable="true" hidden>
+                        <?php foreach (($accessSubgroups ?? []) as $subgrupo): ?>
+                            <?php $isSubgroupSelected = in_array((int) $subgrupo['id'], $editSubgrupoAcessoIdsValue, true); ?>
+                            <label class="access-form__multi-option">
+                                <input type="checkbox" name="subgrupo_acesso_ids[]" value="<?= (int) $subgrupo['id']; ?>" data-multi-option <?= $isSubgroupSelected ? 'checked' : ''; ?>>
+                                <span><?= htmlspecialchars((string) $subgrupo['nome'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
                 <label class="access-form__check">
                     <input type="checkbox" name="ativo" value="1" <?= $editAtivoValue ? 'checked' : ''; ?>>
                     <span>Manter acesso ativo</span>
@@ -365,7 +420,67 @@ require dirname(__DIR__) . '/layouts/header.php';
         const deactivateConfirm = document.getElementById('access-deactivate-confirm');
         const deactivateMessage = document.getElementById('access-deactivate-message');
         const deactivateForms = document.querySelectorAll('.access-deactivate-form');
+        const multiSelects = Array.from(document.querySelectorAll('[data-multi-select]'));
         let pendingDeactivateForm = null;
+
+        function updateMultiSelectText(multiSelect) {
+            const text = multiSelect.querySelector('[data-multi-text]');
+            const selected = Array.from(multiSelect.querySelectorAll('[data-multi-option]:checked'))
+                .map(function (option) {
+                    const label = option.closest('.access-form__multi-option');
+                    return label ? label.textContent.trim() : '';
+                })
+                .filter(Boolean);
+
+            if (text) {
+                text.textContent = selected.length ? selected.join(', ') : 'Selecione';
+            }
+        }
+
+        function closeMultiSelects(except) {
+            multiSelects.forEach(function (multiSelect) {
+                if (multiSelect === except) {
+                    return;
+                }
+
+                const toggleButton = multiSelect.querySelector('[data-multi-toggle]');
+                const menu = multiSelect.querySelector('.access-form__multi-menu');
+
+                if (toggleButton && menu) {
+                    toggleButton.setAttribute('aria-expanded', 'false');
+                    menu.hidden = true;
+                }
+            });
+        }
+
+        multiSelects.forEach(function (multiSelect) {
+            const toggleButton = multiSelect.querySelector('[data-multi-toggle]');
+            const menu = multiSelect.querySelector('.access-form__multi-menu');
+            const options = multiSelect.querySelectorAll('[data-multi-option]');
+
+            updateMultiSelectText(multiSelect);
+
+            if (toggleButton && menu) {
+                toggleButton.addEventListener('click', function () {
+                    const shouldOpen = menu.hidden;
+                    closeMultiSelects(multiSelect);
+                    menu.hidden = !shouldOpen;
+                    toggleButton.setAttribute('aria-expanded', String(shouldOpen));
+                });
+            }
+
+            options.forEach(function (option) {
+                option.addEventListener('change', function () {
+                    updateMultiSelectText(multiSelect);
+                });
+            });
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('[data-multi-select]')) {
+                closeMultiSelects(null);
+            }
+        });
 
         if (toggle) {
             toggle.setAttribute('aria-expanded', String(!body.classList.contains('dashboard-menu-collapsed')));
@@ -511,6 +626,16 @@ require dirname(__DIR__) . '/layouts/header.php';
 
             document.addEventListener('keydown', function (event) {
                 if (event.key === 'Escape') {
+                    const openMultiSelect = multiSelects.find(function (multiSelect) {
+                        const menu = multiSelect.querySelector('.access-form__multi-menu');
+                        return menu && !menu.hidden;
+                    });
+
+                    if (openMultiSelect) {
+                        closeMultiSelects(null);
+                        return;
+                    }
+
                     if (deactivateModal && !deactivateModal.hidden) {
                         closeDeactivateModal();
                         return;
@@ -528,6 +653,18 @@ require dirname(__DIR__) . '/layouts/header.php';
             }
         } else {
             document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    const openMultiSelect = multiSelects.find(function (multiSelect) {
+                        const menu = multiSelect.querySelector('.access-form__multi-menu');
+                        return menu && !menu.hidden;
+                    });
+
+                    if (openMultiSelect) {
+                        closeMultiSelects(null);
+                        return;
+                    }
+                }
+
                 if (event.key === 'Escape' && deactivateModal && !deactivateModal.hidden) {
                     closeDeactivateModal();
                 }

@@ -22,6 +22,7 @@ final class AuthController
 
         view('auth/login', [
             'errorMessage' => flash('error'),
+            'successMessage' => flash('login_success'),
             'email' => flash('old_email', ''),
         ]);
     }
@@ -84,6 +85,74 @@ final class AuthController
             'errorMessage' => flash('first_access_error'),
             'successMessage' => flash('first_access_success'),
         ]);
+    }
+
+    public function forgotPassword(): void
+    {
+        if ($this->isAuthenticated()) {
+            redirect('index.php?action=dashboard');
+        }
+
+        view('auth/forgot-password', [
+            'errorMessage' => flash('password_reset_error'),
+            'successMessage' => flash('password_reset_success'),
+            'email' => flash('password_reset_email', ''),
+        ]);
+    }
+
+    public function requestPasswordReset(): void
+    {
+        if ($this->isAuthenticated()) {
+            redirect('index.php?action=dashboard');
+        }
+
+        $email = trim((string) ($_POST['email'] ?? ''));
+        $novaSenha = (string) ($_POST['nova_senha'] ?? '');
+        $confirmarSenha = (string) ($_POST['confirmar_senha'] ?? '');
+        flash('password_reset_email', $email);
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            flash('password_reset_error', 'Informe um email valido para redefinir a senha.');
+            redirect('index.php?action=forgot_password');
+        }
+
+        if ($novaSenha === '' || $confirmarSenha === '') {
+            flash('password_reset_error', 'Preencha a nova senha e a confirmacao.');
+            redirect('index.php?action=forgot_password');
+        }
+
+        if (strlen($novaSenha) < 6) {
+            flash('password_reset_error', 'A nova senha deve ter pelo menos 6 caracteres.');
+            redirect('index.php?action=forgot_password');
+        }
+
+        if ($novaSenha !== $confirmarSenha) {
+            flash('password_reset_error', 'A confirmacao da senha nao confere.');
+            redirect('index.php?action=forgot_password');
+        }
+
+        if ($novaSenha === '123456') {
+            flash('password_reset_error', 'A nova senha nao pode ser a senha padrao 123456.');
+            redirect('index.php?action=forgot_password');
+        }
+
+        try {
+            $usuarioModel = new User(database());
+            $usuario = $usuarioModel->findActiveByEmail($email);
+
+            if ($usuario === null) {
+                flash('password_reset_error', 'Nao existe usuario ativo com o email informado.');
+                redirect('index.php?action=forgot_password');
+            }
+
+            $usuarioModel->updatePassword((int) $usuario['id'], $novaSenha);
+
+            flash('login_success', 'Senha redefinida com sucesso. Acesse usando sua nova senha.');
+            redirect('index.php');
+        } catch (Throwable $exception) {
+            flash('password_reset_error', 'Nao foi possivel redefinir a senha: ' . $exception->getMessage());
+            redirect('index.php?action=forgot_password');
+        }
     }
 
     public function updateFirstAccessPassword(): void
@@ -177,9 +246,11 @@ final class AuthController
         $this->ensureAuthenticated();
 
         $formLayoutModel = new FormLayout(database());
+        $usuarioModel = new User(database());
 
         view('auth/users', [
             'usuario' => $_SESSION['usuario'],
+            'usuarioSubgrupos' => $usuarioModel->listUserAccessSubgroups((int) $_SESSION['usuario']['id']),
             'customTabs' => $formLayoutModel->listTabs(),
         ]);
     }
@@ -335,6 +406,7 @@ final class AuthController
             'editAccess' => $editAccess,
             'createModalOpen' => $createModalOpen,
             'accessLevels' => $usuarioModel->listAccessLevels(),
+            'accessSubgroups' => $usuarioModel->listAccessSubgroups(),
             'currentPage' => $currentPage,
             'perPage' => $perPage,
             'totalAccesses' => $totalAccesses,
@@ -352,6 +424,7 @@ final class AuthController
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $email = trim((string) ($_POST['email'] ?? ''));
         $nivelAcessoId = (int) ($_POST['nivel_acesso_id'] ?? 0);
+        $subgrupoAcessoIds = $this->normalizeIdList($_POST['subgrupo_acesso_ids'] ?? []);
         $page = max(1, (int) ($_POST['page'] ?? 1));
         $ativo = isset($_POST['ativo']) ? (bool) $_POST['ativo'] : true;
 
@@ -359,6 +432,7 @@ final class AuthController
             'nome' => $nome,
             'email' => $email,
             'nivel_acesso_id' => $nivelAcessoId,
+            'subgrupo_acesso_ids' => $subgrupoAcessoIds,
             'ativo' => $ativo,
         ]);
 
@@ -380,12 +454,17 @@ final class AuthController
                 redirect('index.php?action=accesses&new=1&page=' . $page);
             }
 
+            if (!$usuarioModel->accessSubgroupsExist($subgrupoAcessoIds)) {
+                flash('access_error', 'Selecione ao menos um subgrupo valido.');
+                redirect('index.php?action=accesses&new=1&page=' . $page);
+            }
+
             if ($usuarioModel->emailExists($email)) {
                 flash('access_error', 'Ja existe um acesso cadastrado com esse email.');
                 redirect('index.php?action=accesses&new=1&page=' . $page);
             }
 
-            $usuarioModel->createAccess($nome, $email, $nivelAcessoId, $ativo);
+            $usuarioModel->createAccess($nome, $email, $nivelAcessoId, $subgrupoAcessoIds, $ativo);
 
             flash('access_old', []);
             flash('access_success', 'Acesso criado com sucesso. A senha inicial do usuario sera 123456.');
@@ -406,6 +485,7 @@ final class AuthController
                 'editAccess' => null,
                 'createModalOpen' => true,
                 'accessLevels' => $usuarioModel->listAccessLevels(),
+                'accessSubgroups' => $usuarioModel->listAccessSubgroups(),
                 'currentPage' => $page,
                 'perPage' => $perPage,
                 'totalAccesses' => $totalAccesses,
@@ -416,6 +496,7 @@ final class AuthController
                     'nome' => $nome,
                     'email' => $email,
                     'nivel_acesso_id' => $nivelAcessoId,
+                    'subgrupo_acesso_ids' => $subgrupoAcessoIds,
                     'ativo' => $ativo,
                 ],
             ]);
@@ -430,6 +511,7 @@ final class AuthController
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $email = trim((string) ($_POST['email'] ?? ''));
         $nivelAcessoId = (int) ($_POST['nivel_acesso_id'] ?? 0);
+        $subgrupoAcessoIds = $this->normalizeIdList($_POST['subgrupo_acesso_ids'] ?? []);
         $page = max(1, (int) ($_POST['page'] ?? 1));
         $ativo = isset($_POST['ativo']) ? (bool) $_POST['ativo'] : false;
 
@@ -437,6 +519,7 @@ final class AuthController
             'nome' => $nome,
             'email' => $email,
             'nivel_acesso_id' => $nivelAcessoId,
+            'subgrupo_acesso_ids' => $subgrupoAcessoIds,
             'ativo' => $ativo,
         ]);
 
@@ -458,12 +541,17 @@ final class AuthController
                 redirect('index.php?action=accesses&edit=' . $id . '&page=' . $page);
             }
 
+            if (!$usuarioModel->accessSubgroupsExist($subgrupoAcessoIds)) {
+                flash('access_error', 'Selecione ao menos um subgrupo valido.');
+                redirect('index.php?action=accesses&edit=' . $id . '&page=' . $page);
+            }
+
             if ($usuarioModel->emailExistsForAnotherUser($email, $id)) {
                 flash('access_error', 'Ja existe outro acesso cadastrado com esse email.');
                 redirect('index.php?action=accesses&edit=' . $id . '&page=' . $page);
             }
 
-            $usuarioModel->updateAccess($id, $nome, $email, $nivelAcessoId, $ativo);
+            $usuarioModel->updateAccess($id, $nome, $email, $nivelAcessoId, $subgrupoAcessoIds, $ativo);
 
             if ((int) $_SESSION['usuario']['id'] === $id) {
                 $_SESSION['usuario']['nome'] = $nome;
@@ -623,6 +711,16 @@ final class AuthController
         return function_exists('mb_strtolower')
             ? mb_strtolower($value, 'UTF-8')
             : strtolower($value);
+    }
+
+    private function normalizeIdList(mixed $value): array
+    {
+        $values = is_array($value) ? $value : [$value];
+
+        return array_values(array_unique(array_filter(
+            array_map('intval', $values),
+            static fn (int $id): bool => $id > 0
+        )));
     }
 
     private function storeProfilePhoto(mixed $file): ?string

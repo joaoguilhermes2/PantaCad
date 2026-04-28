@@ -1,6 +1,6 @@
 <?php
 
-$title = 'PantaCad | Login';
+$title = 'PantaCad | Redefinir Senha';
 $bodyClass = 'login-page';
 require dirname(__DIR__) . '/layouts/header.php';
 ?>
@@ -13,15 +13,15 @@ require dirname(__DIR__) . '/layouts/header.php';
 
     <section class="login-panel">
         <div class="login-panel__header">
-            <h2>Login</h2>
-            <p>Use seu email e senha para acessar o sistema.</p>
+            <h2>Redefinir senha</h2>
+            <p>Informe seu email de acesso e cadastre uma nova senha.</p>
         </div>
 
-        <form method="post" action="index.php?action=login" class="login-form">
-            <label for="email">
+        <form method="post" action="index.php?action=request_password_reset" class="login-form">
+            <label for="reset-email">
                 Email
                 <input
-                    id="email"
+                    id="reset-email"
                     name="email"
                     type="email"
                     value="<?= htmlspecialchars((string) ($email ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
@@ -31,14 +31,26 @@ require dirname(__DIR__) . '/layouts/header.php';
                 >
             </label>
 
-            <label for="senha">
-                Senha
+            <label for="reset-nova-senha">
+                Nova senha
                 <input
-                    id="senha"
-                    name="senha"
+                    id="reset-nova-senha"
+                    name="nova_senha"
                     type="password"
-                    autocomplete="current-password"
-                    placeholder="Digite sua senha"
+                    autocomplete="new-password"
+                    placeholder="Digite sua nova senha"
+                    required
+                >
+            </label>
+
+            <label for="reset-confirmar-senha">
+                Confirmar nova senha
+                <input
+                    id="reset-confirmar-senha"
+                    name="confirmar_senha"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="Repita a nova senha"
                     required
                 >
             </label>
@@ -51,11 +63,11 @@ require dirname(__DIR__) . '/layouts/header.php';
                 <div class="success"><?= htmlspecialchars((string) $successMessage, ENT_QUOTES, 'UTF-8'); ?></div>
             <?php endif; ?>
 
-            <button type="submit">Entrar</button>
+            <button type="submit">Redefinir senha</button>
         </form>
 
         <p class="login-panel__footer">
-            <a href="index.php?action=forgot_password">Esqueci minha senha</a>
+            <a href="index.php">Voltar para o login</a>
         </p>
     </section>
 </main>
