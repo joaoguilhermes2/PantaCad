@@ -79,16 +79,41 @@ require dirname(__DIR__) . '/layouts/header.php';
         <section class="dashboard-main">
             <section class="users-page">
                 <div class="users-page__intro">
-                    <h1>Cadastro de usuarios</h1>
-                    <p>Preencha os dados do usuario por abas para organizar o cadastro.</p>
-                    <div class="users-page__subgroups" aria-label="Subgrupos do usuario logado">
-                        <?php if (($usuarioSubgrupos ?? []) !== []): ?>
-                            <?php foreach ($usuarioSubgrupos as $subgrupo): ?>
-                                <span><?= htmlspecialchars((string) ($subgrupo['nome'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <span>Sem subgrupo vinculado</span>
-                        <?php endif; ?>
+                    <div class="users-page__intro-copy">
+                        <h1>Cadastro de usuarios</h1>
+                        <p>Preencha os dados do usuario por abas para organizar o cadastro.</p>
+                        <div class="users-page__subgroups" aria-label="Subgrupos do usuario logado">
+                            <?php if (($usuarioSubgrupos ?? []) !== []): ?>
+                                <?php foreach ($usuarioSubgrupos as $subgrupo): ?>
+                                    <span><?= htmlspecialchars((string) ($subgrupo['nome'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <span>Sem subgrupo vinculado</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="users-page__identity-fields" aria-label="Dados de identificacao do parceiro">
+                        <label for="usuario-codigo">
+                            C&oacute;digo
+                            <input id="usuario-codigo" name="codigo" type="text" form="users-form">
+                        </label>
+                        <label for="usuario-tipo">
+                            Tipo
+                            <select id="usuario-tipo" name="tipo" form="users-form">
+                                <option value="">Selecione</option>
+                                <option value="juridico">Jur&iacute;dico</option>
+                                <option value="fisico">F&iacute;sico</option>
+                            </select>
+                        </label>
+                        <label for="usuario-cpf">
+                            CPF
+                            <input id="usuario-cpf" name="cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" form="users-form">
+                        </label>
+                        <label for="usuario-parceiro-desde">
+                            Parceiro desde
+                            <input id="usuario-parceiro-desde" name="parceiro_desde" type="date" form="users-form">
+                        </label>
                     </div>
                 </div>
 
@@ -107,7 +132,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                         <?php endforeach; ?>
                     </div>
 
-                    <form class="users-form" action="#" method="post" autocomplete="off">
+                    <form class="users-form" id="users-form" action="#" method="post" autocomplete="off">
                         <?php foreach ($tabs as $tabIndex => $tab): ?>
                             <section class="users-tab-panel <?= $tabIndex === 0 ? 'is-active' : ''; ?>" data-user-panel="<?= htmlspecialchars((string) $tab['id'], ENT_QUOTES, 'UTF-8'); ?>" role="tabpanel" <?= $tabIndex === 0 ? '' : 'hidden'; ?>>
                                 <fieldset class="users-section">
@@ -129,7 +154,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                                                 $fieldClasses[] = 'users-form__field--span-' . $fieldWide;
                                             }
                                             ?>
-                                            <?php if ($fieldType === 'radio' || $fieldType === 'checkbox_group'): ?>
+                                            <?php if ($fieldType === 'checkbox_group'): ?>
                                                 <fieldset class="users-form__choice-group <?= htmlspecialchars(implode(' ', $fieldClasses), ENT_QUOTES, 'UTF-8'); ?>">
                                                     <legend><?= htmlspecialchars((string) ($field['label'] ?? 'Campo'), ENT_QUOTES, 'UTF-8'); ?></legend>
                                                     <div class="users-form__choices">
@@ -137,15 +162,13 @@ require dirname(__DIR__) . '/layouts/header.php';
                                                             <?php
                                                             $optionValue = (string) $option;
                                                             $optionId = $fieldId . '-' . $optionIndex;
-                                                            $isChecked = $fieldType === 'radio'
-                                                                ? (string) ($field['default'] ?? '') === $optionValue
-                                                                : in_array($optionValue, array_map('strval', is_array($field['default'] ?? null) ? $field['default'] : []), true);
+                                                            $isChecked = in_array($optionValue, array_map('strval', is_array($field['default'] ?? null) ? $field['default'] : []), true);
                                                             ?>
                                                             <label class="users-form__choice" for="<?= htmlspecialchars($optionId, ENT_QUOTES, 'UTF-8'); ?>">
                                                                 <input
                                                                     id="<?= htmlspecialchars($optionId, ENT_QUOTES, 'UTF-8'); ?>"
-                                                                    name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?><?= $fieldType === 'checkbox_group' ? '[]' : ''; ?>"
-                                                                    type="<?= $fieldType === 'radio' ? 'radio' : 'checkbox'; ?>"
+                                                                    name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?>[]"
+                                                                    type="checkbox"
                                                                     value="<?= htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8'); ?>"
                                                                     <?= $isChecked ? 'checked' : ''; ?>
                                                                 >
@@ -173,11 +196,12 @@ require dirname(__DIR__) . '/layouts/header.php';
                                                         name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?>"
                                                         placeholder="<?= htmlspecialchars((string) ($field['placeholder'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                     ></textarea>
-                                                <?php elseif ($fieldType === 'select'): ?>
+                                                <?php elseif ($fieldType === 'select' || $fieldType === 'radio'): ?>
                                                     <select id="<?= htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8'); ?>" name="<?= htmlspecialchars($fieldName, ENT_QUOTES, 'UTF-8'); ?>">
                                                         <option value="">Selecione</option>
                                                         <?php foreach (($field['options'] ?? []) as $option): ?>
-                                                            <option value="<?= htmlspecialchars((string) $option, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars((string) $option, ENT_QUOTES, 'UTF-8'); ?></option>
+                                                            <?php $optionValue = (string) $option; ?>
+                                                            <option value="<?= htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8'); ?>" <?= (string) ($field['default'] ?? '') === $optionValue ? 'selected' : ''; ?>><?= htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8'); ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 <?php else: ?>
@@ -196,11 +220,6 @@ require dirname(__DIR__) . '/layouts/header.php';
                                 </fieldset>
                             </section>
                         <?php endforeach; ?>
-
-                        <div class="users-form__actions">
-                            <a href="index.php?action=dashboard" class="users-form__cancel">Voltar</a>
-                            <button type="submit" class="users-form__submit">Salvar cadastro</button>
-                        </div>
                     </form>
                 </article>
             </section>
