@@ -221,6 +221,350 @@ require dirname(__DIR__) . '/layouts/header.php';
                             </section>
                         <?php endforeach; ?>
                     </form>
+
+                    <div class="users-footer-tabs" aria-label="Se&ccedil;&otilde;es complementares do cadastro">
+                        <div class="users-footer-tabs__row">
+                            <button type="button" class="users-footer-tabs__button" data-open-client-modal>1 - Cliente</button>
+                            <button type="button" class="users-footer-tabs__button" data-open-supplier-modal>2 - Fornecedor</button>
+                            <button type="button" class="users-footer-tabs__button">3 - Transportador</button>
+                            <button type="button" class="users-footer-tabs__button">4 - Propriedades</button>
+                            <button type="button" class="users-footer-tabs__button">5 - Contatos</button>
+                            <button type="button" class="users-footer-tabs__button">6 - V&iacute;nculos</button>
+                            <button type="button" class="users-footer-tabs__button">7 - Dados Banc&aacute;rios</button>
+                        </div>
+                        <div class="users-footer-tabs__row">
+                            <button type="button" class="users-footer-tabs__button">8 - Avalistas</button>
+                            <button type="button" class="users-footer-tabs__button">9 - Contas Cont&aacute;beis</button>
+                            <button type="button" class="users-footer-tabs__button">10 - Cooperado</button>
+                            <button type="button" class="users-footer-tabs__button">11 - Anexo</button>
+                            <button type="button" class="users-footer-tabs__button">12 - Assinatura digitalizada</button>
+                            <button type="button" class="users-footer-tabs__button">14 - CNO</button>
+                            <button type="button" class="users-footer-tabs__button">15 - Outros <span aria-hidden="true">▾</span></button>
+                        </div>
+                    </div>
+
+                    <div class="supplier-modal client-modal" id="client-modal" role="dialog" aria-modal="true" aria-labelledby="client-modal-title" hidden>
+                        <div class="supplier-modal__backdrop" data-close-client-modal></div>
+                        <section class="supplier-modal__dialog client-modal__dialog">
+                            <header class="supplier-modal__titlebar">
+                                <h2 id="client-modal-title">Cadastro de cliente</h2>
+                                <button type="button" class="supplier-modal__close" aria-label="Fechar" data-close-client-modal>&times;</button>
+                            </header>
+
+                            <div class="client-modal__tabs" aria-label="Abas do cliente">
+                                <button type="button" class="client-modal__tab client-modal__tab--active" data-client-tab="registration">Ficha cadastral</button>
+                                <button type="button" class="client-modal__tab" data-client-tab="personal">Dados pessoais</button>
+                                <button type="button" class="client-modal__tab">Comercializa&ccedil;&atilde;o</button>
+                                <button type="button" class="client-modal__tab">Cr&eacute;dito Rotativo</button>
+                                <button type="button" class="client-modal__tab">Cr&eacute;dito por Ciclo</button>
+                                <button type="button" class="client-modal__tab">Hist&oacute;rico financeiro inicial</button>
+                                <button type="button" class="client-modal__tab">Hist&oacute;rico financeiro</button>
+                            </div>
+
+                            <div class="client-modal__body client-modal__panel client-modal__panel--active" data-client-panel="registration">
+                                <label class="client-modal__field" for="client-registration">
+                                    Matr&iacute;cula
+                                    <input id="client-registration" type="text">
+                                </label>
+
+                                <label class="client-modal__field" for="client-agricultural-start">
+                                    In&iacute;cio da atividade agr&iacute;cola
+                                    <input id="client-agricultural-start" class="client-modal__date-input" type="date">
+                                </label>
+
+                                <fieldset class="client-modal__records">
+                                    <legend>[Registros]</legend>
+
+                                    <label class="client-modal__field" for="client-idaf">
+                                        IDAF (ES)
+                                        <input id="client-idaf" type="text">
+                                    </label>
+
+                                    <label class="client-modal__field client-modal__field--validity" for="client-idaf-validity">
+                                        Validade
+                                        <input id="client-idaf-validity" class="client-modal__date-input" type="date">
+                                    </label>
+
+                                    <label class="client-modal__field" for="client-ima">
+                                        IMA (MG)
+                                        <input id="client-ima" type="text">
+                                    </label>
+
+                                    <label class="client-modal__field" for="client-ima-record">
+                                        Nr. registro IMA
+                                        <input id="client-ima-record" type="text">
+                                    </label>
+
+                                    <label class="client-modal__field client-modal__field--validity" for="client-ima-validity">
+                                        Validade
+                                        <input id="client-ima-validity" class="client-modal__date-input" type="date">
+                                    </label>
+
+                                    <label class="client-modal__field" for="client-inea">
+                                        INEA (RJ)
+                                        <input id="client-inea" type="text">
+                                    </label>
+
+                                    <label class="client-modal__field client-modal__field--validity" for="client-inea-validity">
+                                        Validade
+                                        <input id="client-inea-validity" class="client-modal__date-input" type="date">
+                                    </label>
+
+                                    <label class="client-modal__field" for="client-cidasc">
+                                        CIDASC (SC)
+                                        <input id="client-cidasc" type="text">
+                                    </label>
+
+                                    <label class="client-modal__field client-modal__field--validity" for="client-cidasc-validity">
+                                        Validade
+                                        <input id="client-cidasc-validity" class="client-modal__date-input" type="date">
+                                    </label>
+
+                                    <label class="client-modal__field client-modal__field--rating" for="client-rating">
+                                        Rating
+                                        <input id="client-rating" type="text">
+                                    </label>
+                                </fieldset>
+                            </div>
+
+                            <div class="client-modal__body client-modal__panel client-personal-panel" data-client-panel="personal" hidden>
+                                <div class="client-personal-panel__top-grid">
+                                    <label class="client-personal-panel__field" for="client-personal-nationality">
+                                        Nacionalidade
+                                        <input id="client-personal-nationality" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-birthplace">
+                                        Naturalidade
+                                        <input id="client-personal-birthplace" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-birth-date">
+                                        Nascimento
+                                        <input id="client-personal-birth-date" type="date">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-marital-status">
+                                        Estado Civil
+                                        <select id="client-personal-marital-status">
+                                            <option value="">Selecione</option>
+                                            <option value="casado">Casado</option>
+                                            <option value="solteiro">Solteiro</option>
+                                            <option value="divorciado">Divorciado</option>
+                                            <option value="viuvo">Vi&uacute;vo</option>
+                                        </select>
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-marriage-regime">
+                                        Regime casamento
+                                        <input id="client-personal-marriage-regime" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-marriage-date">
+                                        Casamento
+                                        <input id="client-personal-marriage-date" type="date">
+                                    </label>
+                                    <label class="client-personal-panel__field client-personal-panel__field--wide" for="client-personal-occupation">
+                                        Profiss&atilde;o
+                                        <input id="client-personal-occupation" type="text">
+                                    </label>
+                                </div>
+
+                                <fieldset class="client-personal-panel__fieldset">
+                                    <legend>Filia&ccedil;&atilde;o</legend>
+                                    <label class="client-personal-panel__field client-personal-panel__field--wide" for="client-personal-father-name">
+                                        Nome do pai
+                                        <input id="client-personal-father-name" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-father-birth-date">
+                                        Nascimento
+                                        <input id="client-personal-father-birth-date" type="date">
+                                    </label>
+                                    <label class="client-personal-panel__field client-personal-panel__field--wide" for="client-personal-mother-name">
+                                        Nome da m&atilde;e
+                                        <input id="client-personal-mother-name" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-mother-birth-date">
+                                        Nascimento
+                                        <input id="client-personal-mother-birth-date" type="date">
+                                    </label>
+                                </fieldset>
+
+                                <fieldset class="client-personal-panel__fieldset">
+                                    <legend>C&ocirc;njuge</legend>
+                                    <label class="client-personal-panel__field client-personal-panel__field--wide" for="client-personal-spouse-name">
+                                        Nome c&ocirc;njuge
+                                        <input id="client-personal-spouse-name" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-spouse-birth-date">
+                                        Nascimento
+                                        <input id="client-personal-spouse-birth-date" type="date">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-spouse-nationality">
+                                        Nacionalidade
+                                        <input id="client-personal-spouse-nationality" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-spouse-birthplace">
+                                        Naturalidade
+                                        <input id="client-personal-spouse-birthplace" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-spouse-cpf">
+                                        C.P.F
+                                        <input id="client-personal-spouse-cpf" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-spouse-rg">
+                                        RG
+                                        <input id="client-personal-spouse-rg" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-spouse-issuer">
+                                        &Oacute;rg&atilde;o expedidor
+                                        <input id="client-personal-spouse-issuer" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field client-personal-panel__field--wide" for="client-personal-spouse-occupation">
+                                        Profiss&atilde;o
+                                        <input id="client-personal-spouse-occupation" type="text">
+                                    </label>
+                                </fieldset>
+
+                                <fieldset class="client-personal-panel__fieldset">
+                                    <legend>Endere&ccedil;o</legend>
+                                    <label class="client-personal-panel__field client-personal-panel__field--address" for="client-personal-address">
+                                        Endere&ccedil;o
+                                        <input id="client-personal-address" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-address-number">
+                                        N&uacute;mero
+                                        <input id="client-personal-address-number" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field client-personal-panel__field--address" for="client-personal-neighborhood">
+                                        Bairro
+                                        <input id="client-personal-neighborhood" type="text">
+                                    </label>
+                                    <label class="client-personal-panel__field client-personal-panel__field--city" for="client-personal-city-code">
+                                        Munic&iacute;pio
+                                        <span class="client-personal-panel__lookup">
+                                            <input id="client-personal-city-code" type="text">
+                                            <button type="button" aria-label="Pesquisar municipio">⌕</button>
+                                            <input type="text" aria-label="Nome do municipio">
+                                        </span>
+                                    </label>
+                                    <label class="client-personal-panel__field client-personal-panel__field--uf" for="client-personal-address-uf">
+                                        UF
+                                        <input id="client-personal-address-uf" type="text" maxlength="2">
+                                    </label>
+                                    <label class="client-personal-panel__field" for="client-personal-address-cep">
+                                        CEP
+                                        <input id="client-personal-address-cep" type="text">
+                                    </label>
+                                </fieldset>
+
+                                <fieldset class="client-personal-panel__fieldset client-personal-panel__fieldset--housing">
+                                    <legend>Moradia</legend>
+                                    <label class="client-personal-panel__radio">
+                                        <input type="radio" name="client_personal_housing" value="propria">
+                                        <span>Pr&oacute;pria - 1</span>
+                                    </label>
+                                    <label class="client-personal-panel__radio">
+                                        <input type="radio" name="client_personal_housing" value="alugada">
+                                        <span>Alugada - 2</span>
+                                    </label>
+                                    <label class="client-personal-panel__radio">
+                                        <input type="radio" name="client_personal_housing" value="arrendada">
+                                        <span>Arrendada - 3</span>
+                                    </label>
+                                    <label class="client-personal-panel__radio">
+                                        <input type="radio" name="client_personal_housing" value="cedida">
+                                        <span>Cedida - 4</span>
+                                    </label>
+                                    <label class="client-personal-panel__field client-personal-panel__field--time" for="client-personal-housing-time">
+                                        Tempo
+                                        <input id="client-personal-housing-time" type="text">
+                                    </label>
+                                    <span class="client-personal-panel__suffix">anos</span>
+                                </fieldset>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="supplier-modal" id="supplier-modal" role="dialog" aria-modal="true" aria-labelledby="supplier-modal-title" hidden>
+                        <div class="supplier-modal__backdrop" data-close-supplier-modal></div>
+                        <section class="supplier-modal__dialog">
+                            <header class="supplier-modal__titlebar">
+                                <h2 id="supplier-modal-title">Manuten&ccedil;&atilde;o do cadastro de parceiros</h2>
+                                <button type="button" class="supplier-modal__close" aria-label="Fechar" data-close-supplier-modal>&times;</button>
+                            </header>
+
+                            <div class="supplier-modal__body">
+                                <fieldset class="supplier-modal__section">
+                                    <legend>Dados do representante</legend>
+
+                                    <div class="supplier-modal__grid supplier-modal__grid--supplier">
+                                        <label class="supplier-modal__field supplier-modal__field--name" for="supplier-name">
+                                            Fornecedor
+                                            <input id="supplier-name" type="text">
+                                        </label>
+
+                                        <label class="supplier-modal__field" for="supplier-category-code">
+                                            Categoria
+                                            <span class="supplier-modal__lookup">
+                                                <input id="supplier-category-code" type="text">
+                                                <button type="button" class="supplier-modal__lookup-button" aria-label="Pesquisar categoria">⌕</button>
+                                                <input type="text" aria-label="Descricao da categoria">
+                                            </span>
+                                        </label>
+
+                                        <label class="supplier-modal__field" for="supplier-commission">
+                                            Banda de Comiss&atilde;o
+                                            <span class="supplier-modal__lookup">
+                                                <input id="supplier-commission" type="text">
+                                                <button type="button" class="supplier-modal__lookup-button" aria-label="Pesquisar banda de comissao">⌕</button>
+                                                <input type="text" aria-label="Descricao da banda de comissao">
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <div class="supplier-modal__options-panel">
+                                        <label class="supplier-modal__check supplier-modal__check--active">
+                                            <input type="checkbox">
+                                            <span>Distribuidor de Produtos de Marca</span>
+                                        </label>
+                                        <label class="supplier-modal__field supplier-modal__field--brand" for="supplier-brand">
+                                            Marca
+                                            <input id="supplier-brand" type="text">
+                                        </label>
+                                    </div>
+
+                                    <label class="supplier-modal__check supplier-modal__check--active">
+                                        <input type="checkbox">
+                                        <span>Exporta pedido de compra</span>
+                                    </label>
+
+                                    <label class="supplier-modal__field" for="supplier-personal-data">
+                                        Dados de Pessoal
+                                        <span class="supplier-modal__lookup">
+                                            <input id="supplier-personal-data" type="text">
+                                            <button type="button" class="supplier-modal__lookup-button" aria-label="Pesquisar dados de pessoal">⌕</button>
+                                            <input type="text" aria-label="Descricao dos dados de pessoal">
+                                        </span>
+                                    </label>
+
+                                    <label class="supplier-modal__check supplier-modal__check--active">
+                                        <input type="checkbox">
+                                        <span>Incluir Parceiros Bloqueados para este Fornecedor</span>
+                                    </label>
+                                </fieldset>
+
+                                <div class="supplier-modal__tabs" aria-label="Abas do fornecedor">
+                                    <button type="button">Parceiros Bloqueados</button>
+                                    <button type="button">Categorias Bloqueadas</button>
+                                    <button type="button">Tipos de pedidos</button>
+                                    <button type="button">Limite de Cr&eacute;dito</button>
+                                </div>
+
+                                <div class="supplier-modal__actions">
+                                    <button type="button" class="supplier-modal__action supplier-modal__action--edit">Alterar</button>
+                                    <button type="button" class="supplier-modal__action supplier-modal__action--delete">Excluir</button>
+                                    <button type="button" class="supplier-modal__action supplier-modal__action--disabled" disabled>Gravar</button>
+                                    <button type="button" class="supplier-modal__action supplier-modal__action--exit" data-close-supplier-modal>Sair</button>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
                 </article>
             </section>
         </section>
@@ -236,6 +580,14 @@ require dirname(__DIR__) . '/layouts/header.php';
         const menuGroup = menuToggle ? menuToggle.closest('.dashboard-menu__group') : null;
         const tabButtons = Array.from(document.querySelectorAll('[data-user-tab]'));
         const tabPanels = Array.from(document.querySelectorAll('[data-user-panel]'));
+        const clientModal = document.getElementById('client-modal');
+        const clientOpenButton = document.querySelector('[data-open-client-modal]');
+        const clientCloseButtons = Array.from(document.querySelectorAll('[data-close-client-modal]'));
+        const clientTabButtons = Array.from(document.querySelectorAll('[data-client-tab]'));
+        const clientPanels = Array.from(document.querySelectorAll('[data-client-panel]'));
+        const supplierModal = document.getElementById('supplier-modal');
+        const supplierOpenButton = document.querySelector('[data-open-supplier-modal]');
+        const supplierCloseButtons = Array.from(document.querySelectorAll('[data-close-supplier-modal]'));
 
         if (toggle) {
             toggle.setAttribute('aria-expanded', String(!body.classList.contains('dashboard-menu-collapsed')));
@@ -280,6 +632,113 @@ require dirname(__DIR__) . '/layouts/header.php';
                     panel.hidden = !isActive;
                 });
             });
+        });
+
+        clientTabButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const target = button.getAttribute('data-client-tab');
+
+                if (!target) {
+                    return;
+                }
+
+                clientTabButtons.forEach(function (item) {
+                    item.classList.toggle('client-modal__tab--active', item === button);
+                });
+
+                clientPanels.forEach(function (panel) {
+                    const isActive = panel.getAttribute('data-client-panel') === target;
+                    panel.classList.toggle('client-modal__panel--active', isActive);
+                    panel.hidden = !isActive;
+                });
+            });
+        });
+
+        function closeClientModal() {
+            if (!clientModal) {
+                return;
+            }
+
+            clientModal.hidden = true;
+            body.classList.remove('modal-open');
+
+            if (clientOpenButton) {
+                clientOpenButton.blur();
+            }
+        }
+
+        function openClientModal() {
+            if (!clientModal) {
+                return;
+            }
+
+            clientModal.hidden = false;
+            body.classList.add('modal-open');
+
+            const closeButton = clientModal.querySelector('[data-close-client-modal]');
+
+            if (closeButton) {
+                closeButton.focus();
+            }
+        }
+
+        function closeSupplierModal() {
+            if (!supplierModal) {
+                return;
+            }
+
+            supplierModal.hidden = true;
+            body.classList.remove('modal-open');
+
+            if (supplierOpenButton) {
+                supplierOpenButton.blur();
+            }
+        }
+
+        function openSupplierModal() {
+            if (!supplierModal) {
+                return;
+            }
+
+            supplierModal.hidden = false;
+            body.classList.add('modal-open');
+
+            const closeButton = supplierModal.querySelector('[data-close-supplier-modal]');
+
+            if (closeButton) {
+                closeButton.focus();
+            }
+        }
+
+        if (clientOpenButton) {
+            clientOpenButton.addEventListener('click', openClientModal);
+        }
+
+        clientCloseButtons.forEach(function (button) {
+            button.addEventListener('click', closeClientModal);
+        });
+
+        if (supplierOpenButton) {
+            supplierOpenButton.addEventListener('click', openSupplierModal);
+        }
+
+        supplierCloseButtons.forEach(function (button) {
+            button.addEventListener('click', closeSupplierModal);
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            if (supplierModal && !supplierModal.hidden) {
+                closeSupplierModal();
+                return;
+            }
+
+            if (clientModal && !clientModal.hidden) {
+                closeClientModal();
+            }
         });
     }());
 </script>
