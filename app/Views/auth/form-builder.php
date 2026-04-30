@@ -157,8 +157,8 @@ require dirname(__DIR__) . '/layouts/header.php';
                         </section>
 
                         <div class="form-builder-form__actions">
-                            <a href="index.php?action=users" class="users-form__cancel">Ir para Cadastro de usuarios</a>
-                            <button type="submit" class="users-form__submit">Salvar aba e campos</button>
+                            <a href="index.php?action=users" class="users-form__cancel form-builder-form__cancel">Ir para Cadastro de usuarios</a>
+                            <button type="submit" class="users-form__submit form-builder-form__submit">Salvar aba e campos</button>
                         </div>
                     </form>
                 </article>

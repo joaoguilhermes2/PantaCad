@@ -137,7 +137,14 @@ require dirname(__DIR__) . '/layouts/header.php';
                             <section class="users-tab-panel <?= $tabIndex === 0 ? 'is-active' : ''; ?>" data-user-panel="<?= htmlspecialchars((string) $tab['id'], ENT_QUOTES, 'UTF-8'); ?>" role="tabpanel" <?= $tabIndex === 0 ? '' : 'hidden'; ?>>
                                 <fieldset class="users-section">
                                     <legend><?= htmlspecialchars((string) $tab['name'], ENT_QUOTES, 'UTF-8'); ?></legend>
-                                    <div class="users-form__grid <?= (string) $tab['id'] === 'endereco' ? 'users-form__grid--address' : ''; ?> <?= in_array((string) $tab['id'], ['dados-gerais', 'dados-cobranca', 'enderecos-entrega'], true) ? 'users-form__grid--general' : ''; ?>">
+                                    <?php
+                                    $tabId = (string) ($tab['id'] ?? '');
+                                    $tabName = (string) ($tab['name'] ?? '');
+                                    $normalizedTabName = trim(strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $tabName) ?: $tabName));
+                                    $usesGeneralGrid = in_array($tabId, ['dados-gerais', 'dados-cobranca', 'enderecos-entrega', 'parametros', 'tributario'], true)
+                                        || in_array($normalizedTabName, ['parametros', 'tributario'], true);
+                                    ?>
+                                    <div class="users-form__grid <?= $tabId === 'endereco' ? 'users-form__grid--address' : ''; ?> <?= $usesGeneralGrid ? 'users-form__grid--general' : ''; ?>">
                                         <?php foreach (($tab['fields'] ?? []) as $field): ?>
                                             <?php
                                             $fieldName = (string) ($field['name'] ?? 'campo');
@@ -254,7 +261,7 @@ require dirname(__DIR__) . '/layouts/header.php';
                             <div class="client-modal__tabs" aria-label="Abas do cliente">
                                 <button type="button" class="client-modal__tab client-modal__tab--active" data-client-tab="registration">Ficha cadastral</button>
                                 <button type="button" class="client-modal__tab" data-client-tab="personal">Dados pessoais</button>
-                                <button type="button" class="client-modal__tab">Comercializa&ccedil;&atilde;o</button>
+                                <button type="button" class="client-modal__tab" data-client-tab="commercialization">Comercializa&ccedil;&atilde;o</button>
                                 <button type="button" class="client-modal__tab">Cr&eacute;dito Rotativo</button>
                                 <button type="button" class="client-modal__tab">Cr&eacute;dito por Ciclo</button>
                                 <button type="button" class="client-modal__tab">Hist&oacute;rico financeiro inicial</button>
@@ -476,6 +483,131 @@ require dirname(__DIR__) . '/layouts/header.php';
                                         <input id="client-personal-housing-time" type="text">
                                     </label>
                                     <span class="client-personal-panel__suffix">anos</span>
+                                </fieldset>
+                            </div>
+
+                            <div class="client-modal__body client-modal__panel client-commercial-panel" data-client-panel="commercialization" hidden>
+                                <div class="client-commercial-panel__lookup-list">
+                                    <label class="client-commercial-panel__lookup" for="client-commercial-company-code">
+                                        <span>Empresa</span>
+                                        <input id="client-commercial-company-code" type="text">
+                                        <button type="button" aria-label="Pesquisar empresa">&#8981;</button>
+                                        <input type="text" aria-label="Descricao da empresa">
+                                    </label>
+
+                                    <label class="client-commercial-panel__lookup client-commercial-panel__lookup--alert" for="client-commercial-category-code">
+                                        <span>Categoria</span>
+                                        <input id="client-commercial-category-code" type="text">
+                                        <button type="button" aria-label="Pesquisar categoria">&#8981;</button>
+                                        <input type="text" aria-label="Descricao da categoria">
+                                    </label>
+
+                                    <label class="client-commercial-panel__lookup" for="client-commercial-region-code">
+                                        <span>Regi&atilde;o</span>
+                                        <input id="client-commercial-region-code" type="text">
+                                        <button type="button" aria-label="Pesquisar regiao">&#8981;</button>
+                                        <input type="text" aria-label="Descricao da regiao">
+                                    </label>
+
+                                    <label class="client-commercial-panel__lookup" for="client-commercial-route-code">
+                                        <span>Rota Principal</span>
+                                        <input id="client-commercial-route-code" type="text">
+                                        <button type="button" aria-label="Pesquisar rota principal">&#8981;</button>
+                                        <input type="text" aria-label="Descricao da rota principal">
+                                        <button type="button" aria-label="Mais opcoes">...</button>
+                                    </label>
+
+                                    <label class="client-commercial-panel__lookup" for="client-commercial-commission-code">
+                                        <span>Banda de comiss&atilde;o</span>
+                                        <input id="client-commercial-commission-code" type="text">
+                                        <button type="button" aria-label="Pesquisar banda de comissao">&#8981;</button>
+                                        <input type="text" aria-label="Descricao da banda de comissao">
+                                    </label>
+                                </div>
+
+                                <div class="client-commercial-panel__checks">
+                                    <label>
+                                        <input type="checkbox">
+                                        <span>Valida preposto (Exige informa&ccedil;&atilde;o de preposto durante faturamentos)</span>
+                                    </label>
+                                    <label>
+                                        <input type="checkbox">
+                                        <span>Duplo domicilio para territ&oacute;rio de vendas</span>
+                                    </label>
+                                    <label>
+                                        <input type="checkbox">
+                                        <span>Obrigat&oacute;rio informar a propriedade no controle de pesagem</span>
+                                    </label>
+                                </div>
+
+                                <fieldset class="client-commercial-panel__table-block">
+                                    <legend>Vendedores padr&atilde;o por empresa</legend>
+                                    <div class="client-commercial-panel__table-row">
+                                        <button type="button" class="client-commercial-panel__side-button">1 - Cadastro</button>
+                                        <table class="client-commercial-panel__table">
+                                            <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th>Empresa</th>
+                                                    <th>Vendedor 1</th>
+                                                    <th>Nome</th>
+                                                    <th>Vendedor 2</th>
+                                                    <th>Nome</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>&#9654;</td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                <tr>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="client-commercial-panel__table-block">
+                                    <legend>Vendedores por empresa</legend>
+                                    <div class="client-commercial-panel__table-row">
+                                        <button type="button" class="client-commercial-panel__side-button">2 - Cadastro</button>
+                                        <table class="client-commercial-panel__table client-commercial-panel__table--empty">
+                                            <thead>
+                                                <tr>
+                                                    <th></th>
+                                                    <th>Empresa</th>
+                                                    <th>Vendedor</th>
+                                                    <th>Nome</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>&#9654;</td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </fieldset>
                             </div>
                         </section>
